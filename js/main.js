@@ -1557,7 +1557,7 @@
 
         switch (App.exTxt.index) {
           case 0:
-            App.database = App.exTxt.name
+            App.database = CodeUtil.database = App.exTxt.name
             App.saveCache('', 'database', App.database)
 
             doc = null
@@ -1566,7 +1566,7 @@
             App.onClickAccount(App.currentAccountIndex, item)
             break
           case 1:
-            App.schema = App.exTxt.name
+            App.schema = CodeUtil.schema = App.exTxt.name
             App.saveCache('', 'schema', App.schema)
 
             doc = null
@@ -1575,7 +1575,7 @@
             App.onClickAccount(App.currentAccountIndex, item)
             break
           case 2:
-            App.language = App.exTxt.name
+            App.language = CodeUtil.language = App.exTxt.name
             App.saveCache('', 'language', App.language)
 
             doc = null
@@ -1591,13 +1591,24 @@
             App.saveCache('', 'types', App.types)
             break
           case 8:
-            App.thirdParty = App.exTxt.name
-            App.saveCache('', 'thirdParty', App.thirdParty)
+            var thirdParty = App.exTxt.name
 
-            var tp = StringUtil.trim(App.thirdParty)
+            var tp = StringUtil.trim(thirdParty)
             var index = tp.indexOf(' ')
             var platform = index < 0 ? PLATFORM_SWAGGER : tp.substring(0, index).toUpperCase()
             var docUrl = index <= 0 ? tp.trim() : tp.substring(index + 1).trim()
+
+            var jsonData = null
+            try {
+              jsonData = JSON.parse(docUrl)
+            }
+            catch (e) {}
+
+            var isJSONData = jsonData instanceof Object
+            if (isJSONData == false) {  //后面是 URL 才存储；是 JSON 数据则不存储
+              App.thirdParty = thirdParty
+              App.saveCache('', 'thirdParty', App.thirdParty)
+            }
 
             var host = App.getBaseUrl()
 
@@ -1605,11 +1616,14 @@
               alert('尚未开发 ' + PLATFORM_POSTMAN)
             }
             else if (platform == PLATFORM_SWAGGER) {
+              if (docUrl == '/') {
+                docUrl += '/v2/api-docs'
+              }
               if (docUrl.startsWith('/')) {
-                docUrl = host + docUrl + (docUrl.length > 1 ? '' : '/v2/api-docs')
+                docUrl = host + docUrl
               }
 
-              App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, function (url_, res, err) {
+              var swaggerCallback = function (url_, res, err) {
                 if (App.isSyncing) {
                   alert('正在同步，请等待完成')
                   return
@@ -1642,7 +1656,14 @@
                   // }, 100*i)
                   // i ++
                 }
-              })
+              }
+
+              if (isJSONData) {
+                swaggerCallback(docUrl, { data: jsonData }, null)
+              }
+              else {
+                App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, swaggerCallback)
+              }
             }
             else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
               var isRap = platform == PLATFORM_RAP
@@ -1657,65 +1678,73 @@
                 itemUrl = host + itemUrl
               }
 
-              App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
-                if (App.isSyncing) {
-                  alert('正在同步，请等待完成')
-                  return
+              var itemCallback = function (url, res, err) {
+                try {
+                  App.onResponse(url, res, err)
+                } catch (e) {}
+
+                var data = res.data == null ? null : res.data.data
+                if (isRap) {
+                  var modules = data == null ? null : data.modules
+                  if (modules != null) {
+                    for (var i = 0; i < modules.length; i++) {
+                      var it = modules[i] || {}
+                      var interfaces = it.interfaces || []
+
+                      for (var j = 0; j < interfaces.length; j++) {
+                        App.uploadRapApi(interfaces[j])
+                      }
+                    }
+                  }
                 }
-                App.isSyncing = true
-                App.onResponse(url_, res, err)
-
-                var apis = (res.data || {}).data
-                if (apis == null) { // || apis.length <= 0) {
-                  App.isSyncing = false
-                  alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
-                  return
+                else {
+                  App.uploadYApi(data)
                 }
-                App.exTxt.button = '...'
+              }
 
-                App.uploadTotal = 0 // apis.length || 0
-                App.uploadDoneCount = 0
-                App.uploadFailCount = 0
+              if (isJSONData) {
+                itemCallback(itemUrl, { data: jsonData }, null)
+              }
+              else {
+                App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+                  if (App.isSyncing) {
+                    alert('正在同步，请等待完成')
+                    return
+                  }
+                  App.isSyncing = true
+                  App.onResponse(url_, res, err)
 
-                var item
-                for (var url in apis) {
-                  item = apis[url] || {}
+                  var apis = (res.data || {}).data
+                  if (apis == null) { // || apis.length <= 0) {
+                    App.isSyncing = false
+                    alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
+                    return
+                  }
+                  App.exTxt.button = '...'
 
-                  var list = (isRap ? [ { _id: item.id } ] : (item == null ? null : item.list)) || []
-                  for (let i1 = 0; i1 < list.length; i1++) {
-                    var listItem1 = list[i1]
-                    if (listItem1 == null || listItem1._id == null) {
-                      App.log('listItem1 == null || listItem1._id == null >> continue')
-                      continue
+                  App.uploadTotal = 0 // apis.length || 0
+                  App.uploadDoneCount = 0
+                  App.uploadFailCount = 0
+
+                  var item
+                  for (var url in apis) {
+                    item = apis[url] || {}
+
+                    var list = (isRap ? [ { _id: item.id } ] : (item == null ? null : item.list)) || []
+                    for (let i1 = 0; i1 < list.length; i1++) {
+                      var listItem1 = list[i1]
+                      if (listItem1 == null || listItem1._id == null) {
+                        App.log('listItem1 == null || listItem1._id == null >> continue')
+                        continue
+                      }
+
+                      App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, itemCallback)
                     }
 
-                    App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, function (url, res, err) {
-                      try {
-                        App.onResponse(url, res, err)
-                      } catch (e) {}
-
-                      var data = res.data == null ? null : res.data.data
-                      if (isRap) {
-                        var modules = data == null ? null : data.modules
-                        if (modules != null) {
-                          for (var i = 0; i < modules.length; i++) {
-                            var it = modules[i] || {}
-                            var interfaces = it.interfaces || []
-
-                            for (var j = 0; j < interfaces.length; j++) {
-                              App.uploadRapApi(interfaces[j])
-                            }
-                          }
-                        }
-                      }
-                      else {
-                        App.uploadYApi(data)
-                      }
-                    })
                   }
+                })
 
-                }
-              })
+              }
 
             }
             else {
@@ -1983,7 +2012,6 @@
         App.request(true, REQUEST_TYPE_JSON, App.server + '/post', {
           format: false,
           'Document': {
-            'userId': App.User.id,
             'testAccountId': currentAccountId,
             'type': type,
             'name': StringUtil.get(name),
@@ -1992,9 +2020,7 @@
             'header': StringUtil.isEmpty(header, true) ? null : StringUtil.trim(header)
           },
           'TestRecord': {
-            'documentId@': '/Document/id',
             'randomId': 0,
-            'userId': App.User.id,
             'host': App.getBaseUrl(),
             'testAccountId': currentAccountId,
             'response': ''
@@ -2859,6 +2885,7 @@
           clearTimeout(handler)  //解决 vUrl.value 和 vInput.value 变化导致刷新，而且会把 vInput.value 重置，加上下面 onChange 再刷新就卡死了
         }
 
+        CodeUtil.type = this.type;
         this.onChange(false);
       },
 
@@ -3216,7 +3243,7 @@
           case CodeUtil.LANGUAGE_KOTLIN:
             s += '\n#### <= Android-Kotlin: 空对象用 HashMap&lt;String, Any&gt;()，空数组用 ArrayList&lt;Any&gt;()\n'
               + '```kotlin \n'
-              + CodeUtil.parseKotlinRequest(null, JSON.parse(rq), 0)
+              + CodeUtil.parseKotlinRequest(null, JSON.parse(rq), 0, isSingle, false, false, App.type, App.getBaseUrl(), '/' + App.getMethod(), App.urlComment)
               + '\n ``` \n注：对象 {} 用 mapOf("key": value)，数组 [] 用 listOf(value0, value1)\n';
             break;
           case CodeUtil.LANGUAGE_JAVA:
@@ -3272,11 +3299,18 @@
               + '\n ``` \n注：对象 {} 用 ' + (isSingle ? '[\'key\' => value]' : 'array("key" => value)') + '，数组 [] 用 ' + (isSingle ? '[value0, value1]\n' : 'array(value0, value1)\n');
             break;
 
+          case CodeUtil.LANGUAGE_PYTHON:
+            s += '\n#### <= Web-Python: 注释符用 \'\#\''
+              + ' \n ```python \n'
+              + CodeUtil.parsePythonRequest(null, JSON.parse(rq), 0, isSingle, vInput.value)
+              + '\n ``` \n注：关键词转换 null: None, false: False, true: True';
+            break;
+
           //以下都不需要解析，直接用左侧的 JSON
           case CodeUtil.LANGUAGE_TYPE_SCRIPT:
           case CodeUtil.LANGUAGE_JAVA_SCRIPT:
-          case CodeUtil.LANGUAGE_PYTHON:
-            s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求 JSON 一样 \n';
+          //case CodeUtil.LANGUAGE_PYTHON:
+            s += '\n#### <= Web-JavaScript/TypeScript: 和左边的请求 JSON 一样 \n';
             break;
           default:
             s += '\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。\n';
@@ -3315,7 +3349,7 @@
           + '<br>提供 接口和文档托管、机器学习自动化测试、自动生成文档和代码 等服务'
           + '<br>由 <a href="https://github.com/TommyLemon/APIAuto" target="_blank">APIAuto(前端网页工具)</a>, <a href="https://github.com/APIJSON/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
           + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
-          + '<br>Copyright &copy; 2016-2019 Tommy Lemon<br><br></p>'
+          + '<br>Copyright &copy; 2016-' + new Date().getFullYear() + ' Tommy Lemon<br><br></p>'
         );
 
         App.view = 'markdown';
@@ -3329,6 +3363,9 @@
        */
       getDoc: function (callback) {
 
+        var count = this.count || 100  //超过就太卡了
+        var page = this.page || 0
+
         var search = StringUtil.isEmpty(this.search, true) ? null : '%' + StringUtil.trim(this.search) + '%'
         this.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
           format: false,
@@ -3340,7 +3377,8 @@
             }
           },
           'Access[]': {
-            'count': 0,
+            'count': count,
+            'page': page,
             'Access': {
               '@column': 'name,alias,get,head,gets,heads,post,put,delete',
               '@order': 'date-,name+',
@@ -3352,8 +3390,8 @@
             }
           },
           '[]': {
-            'count': this.count || 100,  //超过就太卡了
-            'page': this.page || 0,
+            'count': count,
+            'page': page,
             'Table': this.database == 'SQLSERVER' ? null : {
               'table_schema': this.schema,
               'table_type': 'BASE TABLE',
@@ -3415,7 +3453,8 @@
             }
           },
           'Function[]': {
-            'count': 0,
+            'count': count,
+            'page': page,
             'Function': {
               '@order': 'date-,name+',
               '@column': 'name,arguments,demo,detail',
@@ -3429,13 +3468,14 @@
             }
           },
           'Request[]': {
-            'count': 0,
+            'count': count,
+            'page': page,
             'Request': {
               '@order': 'version-,method-',
               '@json': 'structure',
               'tag$': search,
-              'detail$': search,
-              '@combine': search == null ? null : 'tag$,detail$',
+              // 界面又不显示这个字段，搜出来莫名其妙 'detail$': search,
+              // '@combine': search == null ? null : 'tag$,detail$',
             }
           }
         }, {}, function (url, res, err) {
@@ -3454,6 +3494,7 @@
 
           //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           var list = docObj == null ? null : docObj['[]'];
+          CodeUtil.tableList = list;
           if (list != null) {
             if (DEBUG) {
               log('getDoc  [] = \n' + format(JSON.stringify(list)));
@@ -4936,15 +4977,15 @@
         }
         var database = this.getCache('', 'database')
         if (StringUtil.isEmpty(database, true) == false) {
-          this.database = database
+          this.database = CodeUtil.database = database
         }
         var schema = this.getCache('', 'schema')
         if (StringUtil.isEmpty(schema, true) == false) {
-          this.schema = schema
+          this.schema = CodeUtil.schema = schema
         }
         var language = this.getCache('', 'language')
         if (StringUtil.isEmpty(language, true) == false) {
-          this.language = language
+          this.language = CodeUtil.language = language
         }
         var types = this.getCache('', 'types')
         if (types != null && types.length > 0) {
