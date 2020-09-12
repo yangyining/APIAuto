@@ -97,9 +97,13 @@
           return false
         }
 
+        var method = App.getMethod();
+        var mIndex = method == null ? -1 : method.indexOf('/');
+        var isRestful = mIndex > 0 && mIndex < method.length - 1;
+
         try {
           if (val instanceof Array) {
-            if (val[0] instanceof Object && (val[0] instanceof Array == false) && JSONObject.isArrayKey(key)) {
+            if (val[0] instanceof Object && (val[0] instanceof Array == false) && JSONObject.isArrayKey(key, null, isRestful)) {
               // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
 
               var ckey = key.substring(0, key.lastIndexOf('[]'));
@@ -113,7 +117,7 @@
               for (var i = 0; i < val.length; i++) {
                 var cPath = (StringUtil.isEmpty(path, false) ? '' : path + '/') + key;
 
-                if (JSONObject.isTableKey(firstKey)) {
+                if (JSONObject.isTableKey(firstKey, val, isRestful)) {
                   // var newVal = JSON.parse(JSON.stringify(val[i]))
 
                   var newVal = {}
@@ -154,7 +158,7 @@
 
             val._$_this_$_ = JSON.stringify({
               path: (StringUtil.isEmpty(path, false) ? '' : path + '/') + key,
-              table: JSONObject.isTableKey(objName) ? objName : null
+              table: JSONObject.isTableKey(objName, val, isRestful) ? objName : null
             })
 
             for (var k in newVal) {
@@ -215,6 +219,11 @@
           var path = null
           var table = null
           var column = null
+
+          var method = App.getMethod();
+          var mIndex = method == null ? -1 : method.indexOf('/');
+          var isRestful = mIndex > 0 && mIndex < method.length - 1;
+
           if (val instanceof Object && (val instanceof Array == false)) {
 
             var parent = $event.currentTarget.parentElement.parentElement
@@ -238,10 +247,10 @@
               var aliaIndex = key == null ? -1 : key.indexOf(':');
               var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
 
-              if (JSONObject.isTableKey(objName)) {
+              if (JSONObject.isTableKey(objName, val, isRestful)) {
                 table = objName
               }
-              else if (JSONObject.isTableKey(table)) {
+              else if (JSONObject.isTableKey(table, val, isRestful)) {
                 column = key
               }
 
@@ -267,7 +276,7 @@
               }
             }
 
-            if (val instanceof Array && JSONObject.isArrayKey(key)) {
+            if (val instanceof Array && JSONObject.isArrayKey(key, val, isRestful)) {
               var key2 = key == null ? null : key.substring(0, key.lastIndexOf('[]'));
 
               var aliaIndex = key2 == null ? -1 : key2.indexOf(':');
@@ -277,7 +286,7 @@
               var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
 
               // alert('key = ' + key + '; firstKey = ' + firstKey + '; firstIndex = ' + firstIndex)
-              if (JSONObject.isTableKey(firstKey)) {
+              if (JSONObject.isTableKey(firstKey, null, isRestful)) {
                 table = firstKey
 
                 var s0 = '';
@@ -286,11 +295,15 @@
                   firstIndex = objName.indexOf('-');
                   column = firstIndex < 0 ? objName : objName.substring(0, firstIndex)
 
-                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, App.language, true); // this.getResponseHint({}, table, $event
+                  var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
+
+                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, App.language, true, false, pathUri.split('/'), isRestful, val); // this.getResponseHint({}, table, $event
                   s0 = column + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
                 }
 
-                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, null, App.getMethod(), App.database, App.language, true);
+                var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + (StringUtil.isEmpty(column) ? key : column);
+
+                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : null, App.getMethod(), App.database, App.language, true, false, pathUri.split('/'), isRestful, val);
                 s = (StringUtil.isEmpty(path) ? '' : path + '/') + key + ' 中 '
                   + (
                     StringUtil.isEmpty(c, true) ? '' : table + ': '
@@ -304,7 +317,7 @@
               // }
             }
             else {
-              if (JSONObject.isTableKey(table)) {
+              if (isRestful || JSONObject.isTableKey(table)) {
                 column = key
               }
               // alert('path = ' + path + '; table = ' + table + '; column = ' + column)
@@ -312,9 +325,10 @@
           }
           // alert('setResponseHint  table = ' + table + '; column = ' + column)
 
-          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, App.language, true);
+          var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
+          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val);
 
-          s += (StringUtil.isEmpty(path) ? '' : path + '/') + (StringUtil.isEmpty(column) ? (StringUtil.isEmpty(table) ? key : table) : column) + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
+          s += pathUri + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
         }
         catch (e) {
           s += '\n' + e.message
@@ -353,6 +367,7 @@
   var REQUEST_TYPE_FORM = 'FORM'  // POST x-www-form-urlencoded
   var REQUEST_TYPE_DATA = 'DATA'  // POST form-data
   var REQUEST_TYPE_JSON = 'JSON'  // POST application/json
+  var REQUEST_TYPE_GRPC = 'GRPC'  // POST application/json
 
   var RANDOM_DB = 'RANDOM_DB'
   var RANDOM_IN = 'RANDOM_IN'
@@ -793,7 +808,7 @@
           var item
           for (var i = 0; i < hs.length; i++) {
             item = hs[i]
-            var index = item.indexOf('//') //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
+            var index = item.indexOf('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
             var item2 = index < 0 ? item : item.substring(0, index)
             item2 = item2.trim()
             if (item2.length <= 0) {
@@ -802,11 +817,24 @@
 
             index = item2.indexOf(':')
             if (index <= 0) {
-              throw new Error('请求头 Request Header 输入错误！请按照每行 key:value 的格式输入，不要有多余的换行或空格！'
+              throw new Error('请求头 Request Header 输入错误！请按照每行 key: value 的格式输入，不要有多余的换行或空格！'
                 + '\n错误位置: 第 ' + (i + 1) + ' 行'
                 + '\n错误文本: ' + item)
             }
-            header[StringUtil.trim(item2.substring(0, index))] = item2.substring(index + 1, item2.length)
+
+            var val = item2.substring(index + 1, item2.length)
+
+            var ind = val.indexOf('(')  //一定要有函数是为了避免里面是一个简短单词和 APIAuto 代码中变量冲突
+            if (ind > 0 && val.indexOf(')') > ind) {  //不从 0 开始是为了保证是函数，且不是 (1) 这种单纯限制作用域的括号
+              try {
+                val = eval(val)
+              }
+              catch (e) {
+                App.log("getHeader  if (hs != null && hs.length > 0) { ... if (ind > 0 && val.indexOf(')') > ind) { ... try { val = eval(val) } catch (e) = " + e.message)
+              }
+            }
+
+            header[StringUtil.trim(item2.substring(0, index))] = val
           }
         }
 
@@ -945,6 +973,49 @@
               }
               else if (index == 8) {
                 alert('例如：\nSWAGGER http://apijson.cn:8080/v2/api-docs\nSWAGGER /v2/api-docs  // 省略 Host\nSWAGGER /  // 省略 Host 和 分支 URL\nRAP /repository/joined /repository/get\nYAPI /api/interface/list_menu /api/interface/get')
+
+                try {
+                  App.getThirdPartyApiList(this.thirdParty, function (platform, docUrl, listUrl, itemUrl, url_, res, err) {
+                    CodeUtil.thirdParty = platform
+                    App.onResponse(url_, res, err)
+                    return false
+                  }, function (platform, docUrl, listUrl, itemUrl, url_, res, err) {
+                    var data = (res || {}).data
+                    var apiMap = CodeUtil.thirdPartyApiMap || {}
+
+                    if (platform == PLATFORM_POSTMAN) {
+                      alert('尚未开发 ' + PLATFORM_POSTMAN)
+                      return true
+                    }
+                    else if (platform == PLATFORM_SWAGGER) {
+                    }
+                    else if (platform == PLATFORM_RAP) {
+                    }
+                    else if (platform == PLATFORM_YAPI) {
+                      var api = (data || {}).data
+                      var typeAndParam = App.parseYApiTypeAndParam(api)
+                      api = api || {}
+                      var url = api.path
+
+                      apiMap[url] = {
+                        request: typeAndParam.param,
+                        response: api.res_body == null ? null : JSON.parse(api.res_body)
+                      }
+                    }
+                    else {
+                      alert('第三方平台只支持 Postman, Swagger, Rap, YApi ！')
+                      return true
+                    }
+
+                    CodeUtil.thirdPartyApiMap = apiMap
+                    return true
+                  })
+                } catch (e) {
+                  console.log('created  try { ' +
+                    '\nthis.User = this.getCache(this.server, User) || {}' +
+                    '\n} catch (e) {\n' + e.message)
+                }
+
               }
               break
             case 3:
@@ -1074,6 +1145,7 @@
           type: App.type,
           url: '/' + this.getMethod(),
           request: inputted,
+          response: App.jsoncon,
           header: vHeader.value,
           random: vRandom.value
         }
@@ -1122,6 +1194,12 @@
         this.randomTestTitle = random.name
         this.testRandomCount = random.count
         vRandom.value = StringUtil.get(random.config)
+
+        var response = ((item || {}).TestRecord || {}).response
+        if (StringUtil.isEmpty(response, true) == false) {
+            App.jsoncon = StringUtil.trim(response)
+            App.view = 'code'
+        }
       },
       // 根据测试用例/历史记录恢复数据
       restoreRemoteAndTest: function (item) {
@@ -1130,12 +1208,12 @@
       // 根据测试用例/历史记录恢复数据
       restoreRemote: function (item, test) {
         this.currentRemoteItem = item
-        this.restore((item || {}).Document, true, test)
+        this.restore((item || {}).Document, ((item || {}).TestRecord || {}).response, true, test)
       },
       // 根据历史恢复数据
-      restore: function (item, isRemote, test) {
+      restore: function (item, response, isRemote, test) {
         item = item || {}
-        localforage.getItem(item.key || '', function (err, value) {
+        // localforage.getItem(item.key || '', function (err, value) {
           var branch = new String(item.url || '/get')
           if (branch.startsWith('/') == false) {
             branch = '/' + branch
@@ -1156,10 +1234,20 @@
             App.randoms = []
             App.showRandomList(App.isRandomListShow, item)
           }
+
           if (test) {
             App.send(false)
           }
-        })
+          else {
+            if (StringUtil.isEmpty(response, true) == false) {
+              setTimeout(function () {
+                App.jsoncon = StringUtil.trim(response)
+                App.view = 'code'
+              }, 500)
+            }
+          }
+
+        // })
       },
 
       // 获取所有保存的json
@@ -1425,7 +1513,7 @@
 
         var config = ''
         var childPath = path == null || path == '' ? key : path + '/' + key
-        var prefix = '\n' + childPath + ' : '
+        var prefix = '\n' + childPath + ': '
 
         if (value instanceof Array) {
           var val
@@ -1490,10 +1578,10 @@
             if (isId) {
               config += prefix + 'ORDER_IN(undefined, null, ' + value + ')'
               if (value >= 1000000000) { //PHP 等语言默认精确到秒 1000000000000) {
-                config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
+                config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
               }
               else {
-                config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
+                config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
               }
             }
             else {
@@ -1517,17 +1605,18 @@
                       : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + (hasDot ? ', ' + keep + ')' : ')'))
                   )
                 var hasDot = String(value).indexOf('.') >= 0
+
                 if (value < 0) {
-                  config += prefix + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
+                  config += '\n// 可替代上面的 ' + prefix.substring(1) + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
                 }
                 else if (value > 0 && value < 1) {  // 0-1 比例
-                  config += prefix + 'RANDOM_NUM(0, 1)'
+                  config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_NUM(0, 1)'
                 }
                 else if (value >= 0 && value <= 100) {  // 10% 百分比
-                  config += prefix + 'RANDOM_INT(0, 100)'
+                  config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(0, 100)'
                 }
                 else {
-                  config += prefix + (hasDot != true && value < 10 ? 'ORDER_INT(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
+                  config += '\n// 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? 'ORDER_INT(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
                 }
               }
             }
@@ -1591,122 +1680,19 @@
             App.saveCache('', 'types', App.types)
             break
           case 8:
-            var thirdParty = App.exTxt.name
-
-            var tp = StringUtil.trim(thirdParty)
-            var index = tp.indexOf(' ')
-            var platform = index < 0 ? PLATFORM_SWAGGER : tp.substring(0, index).toUpperCase()
-            var docUrl = index <= 0 ? tp.trim() : tp.substring(index + 1).trim()
-
-            var jsonData = null
-            try {
-              jsonData = JSON.parse(docUrl)
-            }
-            catch (e) {}
-
-            var isJSONData = jsonData instanceof Object
-            if (isJSONData == false) {  //后面是 URL 才存储；是 JSON 数据则不存储
-              App.thirdParty = thirdParty
-              App.saveCache('', 'thirdParty', App.thirdParty)
-            }
-
-            var host = App.getBaseUrl()
-
-            if (platform == PLATFORM_POSTMAN) {
-              alert('尚未开发 ' + PLATFORM_POSTMAN)
-            }
-            else if (platform == PLATFORM_SWAGGER) {
-              if (docUrl == '/') {
-                docUrl += '/v2/api-docs'
-              }
-              if (docUrl.startsWith('/')) {
-                docUrl = host + docUrl
+            App.getThirdPartyApiList(App.exTxt.name, function (platform, docUrl, listUrl, itemUrl, url_, res, err) {
+              var jsonData = (res || {}).data
+              var isJSONData = jsonData instanceof Object
+              if (isJSONData == false) {  //后面是 URL 才存储；是 JSON 数据则不存储
+                App.thirdParty = thirdParty
+                App.saveCache('', 'thirdParty', App.thirdParty)
               }
 
-              var swaggerCallback = function (url_, res, err) {
-                if (App.isSyncing) {
-                  alert('正在同步，请等待完成')
-                  return
-                }
-                App.isSyncing = true
-                App.onResponse(url_, res, err)
-
-                var apis = (res.data || {}).paths
-                if (apis == null) { // || apis.length <= 0) {
-                  App.isSyncing = false
-                  alert('没有查到 Swagger 文档！请开启跨域代理，并检查 URL 是否正确！')
-                  return
-                }
-                App.exTxt.button = '...'
-
-                App.uploadTotal = 0 // apis.length || 0
-                App.uploadDoneCount = 0
-                App.uploadFailCount = 0
-
-                var item
-                // var i = 0
-                for (var url in apis) {
-                  item = apis[url]
-                  //导致 url 全都是一样的  setTimeout(function () {
-                  if (App.uploadSwaggerApi(url, item, 'get')
-                    || App.uploadSwaggerApi(url, item, 'post')
-                    || App.uploadSwaggerApi(url, item, 'put')
-                    || App.uploadSwaggerApi(url, item, 'delete')
-                  ) {}
-                  // }, 100*i)
-                  // i ++
-                }
+              if (platform == PLATFORM_POSTMAN) {
+                alert('尚未开发 ' + PLATFORM_POSTMAN)
               }
-
-              if (isJSONData) {
-                swaggerCallback(docUrl, { data: jsonData }, null)
-              }
-              else {
-                App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, swaggerCallback)
-              }
-            }
-            else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
-              var isRap = platform == PLATFORM_RAP
-              index = docUrl.indexOf(' ')
-              var listUrl = index < 0 ? docUrl + (isRap ? '/repository/joined' : '/api/interface/list_menu') : docUrl.substring(0, index).trim()
-              var itemUrl = index < 0 ? docUrl + (isRap ? '/repository/get' : '/api/interface/get') : docUrl.substring(index + 1).trim()
-
-              if (listUrl.startsWith('/')) {
-                listUrl = host + listUrl
-              }
-              if (itemUrl.startsWith('/')) {
-                itemUrl = host + itemUrl
-              }
-
-              var itemCallback = function (url, res, err) {
-                try {
-                  App.onResponse(url, res, err)
-                } catch (e) {}
-
-                var data = res.data == null ? null : res.data.data
-                if (isRap) {
-                  var modules = data == null ? null : data.modules
-                  if (modules != null) {
-                    for (var i = 0; i < modules.length; i++) {
-                      var it = modules[i] || {}
-                      var interfaces = it.interfaces || []
-
-                      for (var j = 0; j < interfaces.length; j++) {
-                        App.uploadRapApi(interfaces[j])
-                      }
-                    }
-                  }
-                }
-                else {
-                  App.uploadYApi(data)
-                }
-              }
-
-              if (isJSONData) {
-                itemCallback(itemUrl, { data: jsonData }, null)
-              }
-              else {
-                App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+              else if (platform == PLATFORM_SWAGGER) {
+                var swaggerCallback = function (url_, res, err) {
                   if (App.isSyncing) {
                     alert('正在同步，请等待完成')
                     return
@@ -1714,10 +1700,10 @@
                   App.isSyncing = true
                   App.onResponse(url_, res, err)
 
-                  var apis = (res.data || {}).data
+                  var apis = (res.data || {}).paths
                   if (apis == null) { // || apis.length <= 0) {
                     App.isSyncing = false
-                    alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
+                    alert('没有查到 Swagger 文档！请开启跨域代理，并检查 URL 是否正确！')
                     return
                   }
                   App.exTxt.button = '...'
@@ -1727,32 +1713,224 @@
                   App.uploadFailCount = 0
 
                   var item
+                  // var i = 0
                   for (var url in apis) {
-                    item = apis[url] || {}
+                    item = apis[url]
+                    //导致 url 全都是一样的  setTimeout(function () {
+                    if (App.uploadSwaggerApi(url, item, 'get')
+                      || App.uploadSwaggerApi(url, item, 'post')
+                      || App.uploadSwaggerApi(url, item, 'put')
+                      || App.uploadSwaggerApi(url, item, 'delete')
+                    ) {}
+                    // }, 100*i)
+                    // i ++
+                  }
+                }
 
-                    var list = (isRap ? [ { _id: item.id } ] : (item == null ? null : item.list)) || []
-                    for (let i1 = 0; i1 < list.length; i1++) {
-                      var listItem1 = list[i1]
-                      if (listItem1 == null || listItem1._id == null) {
-                        App.log('listItem1 == null || listItem1._id == null >> continue')
-                        continue
+                if (isJSONData) {
+                  swaggerCallback(docUrl, { data: jsonData }, null)
+                }
+                else {
+                  App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, swaggerCallback)
+                }
+              }
+              else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
+                var isRap = platform == PLATFORM_RAP
+
+                var itemCallback = function (url, res, err) {
+                  try {
+                    App.onResponse(url, res, err)
+                  } catch (e) {}
+
+                  var data = res.data == null ? null : res.data.data
+                  if (isRap) {
+                    var modules = data == null ? null : data.modules
+                    if (modules != null) {
+                      for (var i = 0; i < modules.length; i++) {
+                        var it = modules[i] || {}
+                        var interfaces = it.interfaces || []
+
+                        for (var j = 0; j < interfaces.length; j++) {
+                          App.uploadRapApi(interfaces[j])
+                        }
+                      }
+                    }
+                  }
+                  else {
+                    App.uploadYApi(data)
+                  }
+                }
+
+                if (isJSONData) {
+                  itemCallback(itemUrl, { data: jsonData }, null)
+                }
+                else {
+                  App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+                    if (App.isSyncing) {
+                      alert('正在同步，请等待完成')
+                      return
+                    }
+                    App.isSyncing = true
+                    App.onResponse(url_, res, err)
+
+                    var apis = (res.data || {}).data
+                    if (apis == null) { // || apis.length <= 0) {
+                      App.isSyncing = false
+                      alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
+                      return
+                    }
+                    App.exTxt.button = '...'
+
+                    App.uploadTotal = 0 // apis.length || 0
+                    App.uploadDoneCount = 0
+                    App.uploadFailCount = 0
+
+                    var item
+                    for (var url in apis) {
+                      item = apis[url] || {}
+
+                      var list = (isRap ? [ { _id: item.id } ] : (item == null ? null : item.list)) || []
+                      for (let i1 = 0; i1 < list.length; i1++) {
+                        var listItem1 = list[i1]
+                        if (listItem1 == null || listItem1._id == null) {
+                          App.log('listItem1 == null || listItem1._id == null >> continue')
+                          continue
+                        }
+
+                        App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, itemCallback)
                       }
 
-                      App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, itemCallback)
                     }
+                  })
 
-                  }
-                })
+                }
 
               }
+              else {
+                alert('第三方平台只支持 Postman, Swagger, Rap, YApi ！')
+              }
 
-            }
-            else {
-              alert('第三方平台只支持 Postman, Swagger, Rap, YApi ！')
-            }
+              return true
+            })
 
             break
         }
+      },
+
+      getThirdPartyApiList: function (thirdParty, listCallback, itemCallback) {
+        App.parseThirdParty(thirdParty, function (platform, jsonData, docUrl, listUrl, itemUrl) {
+          var isJSONData = jsonData instanceof Object
+
+          if (platform == PLATFORM_POSTMAN) {
+            alert('尚未开发 ' + PLATFORM_POSTMAN)
+          }
+          else if (platform == PLATFORM_SWAGGER) {
+            if (isJSONData) {
+              listCallback(platform, docUrl, listUrl, itemUrl, itemUrl, { data: jsonData }, null)
+            }
+            else {
+              App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, function (url_, res, err) {
+                if (listCallback != null) {
+                  listCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)
+                }
+              })
+            }
+          }
+          else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
+            var isRap = platform == PLATFORM_RAP
+
+            if (isJSONData) {
+              if (listCallback != null && listCallback(platform, docUrl, listUrl, itemUrl, listUrl, {data: [jsonData]}, null)) {
+                return
+              }
+
+              if (itemCallback != null) {
+                itemCallback(platform, docUrl, listUrl, itemUrl, itemUrl, {data: jsonData}, null)
+              }
+            }
+            else {
+              App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+                if (listCallback != null && listCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)) {
+                  return
+                }
+
+                var apis = (res.data || {}).data
+                if (apis == null) { // || apis.length <= 0) {
+                  alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
+                  return
+                }
+
+                var item
+                for (var url in apis) {
+                  item = apis[url] || {}
+
+                  var list = (isRap ? [ { _id: item.id } ] : (item == null ? null : item.list)) || []
+                  for (let i1 = 0; i1 < list.length; i1++) {
+                    var listItem1 = list[i1]
+                    if (listItem1 == null || listItem1._id == null) {
+                      App.log('listItem1 == null || listItem1._id == null >> continue')
+                      continue
+                    }
+
+                    App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, function (url_, res, err) {
+                      if (itemCallback != null) {
+                        itemCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)
+                      }
+                    })
+                  }
+
+                }
+              })
+
+            }
+
+          }
+          else {
+            alert('第三方平台只支持 Postman, Swagger, Rap, YApi ！')
+          }
+        })
+
+      },
+
+      parseThirdParty: function (thirdParty, callback) {
+        var tp = StringUtil.trim(thirdParty)
+        var index = tp.indexOf(' ')
+        var platform = index < 0 ? PLATFORM_SWAGGER : tp.substring(0, index).toUpperCase()
+        var docUrl = index <= 0 ? tp.trim() : tp.substring(index + 1).trim()
+
+        var jsonData = null
+        try {
+          jsonData = JSON.parse(docUrl)
+        }
+        catch (e) {}
+
+        var host = App.getBaseUrl()
+        var listUrl = null
+        var itemUrl = null
+
+        if (platform == PLATFORM_SWAGGER) {
+          if (docUrl == '/') {
+            docUrl += 'v2/api-docs'
+          }
+          if (docUrl.startsWith('/')) {
+            docUrl = host + docUrl
+          }
+        }
+        else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
+          var isRap = platform == PLATFORM_RAP
+          index = docUrl.indexOf(' ')
+          listUrl = index < 0 ? docUrl + (isRap ? '/repository/joined' : '/api/interface/list_menu') : docUrl.substring(0, index).trim()
+          itemUrl = index < 0 ? docUrl + (isRap ? '/repository/get' : '/api/interface/get') : docUrl.substring(index + 1).trim()
+
+          if (listUrl.startsWith('/')) {
+            listUrl = host + listUrl
+          }
+          if (itemUrl.startsWith('/')) {
+            itemUrl = host + itemUrl
+          }
+        }
+
+        callback(platform, jsonData, docUrl, listUrl, itemUrl)
       },
 
       /**上传 Swagger API
@@ -1847,7 +2025,7 @@
             var val = paraItem.value
 
             if (paraItem.pos == 1) { //header
-              header += (k <= 0 ? '' : '\n') + name + ' : ' + (val == null ? '' : val)
+              header += (k <= 0 ? '' : '\n') + name + ': ' + (val == null ? '' : val)
                 + (StringUtil.isEmpty(paraItem.description, true) ? '' : '  // ' + paraItem.description)
               continue
             }
@@ -1876,9 +2054,32 @@
 
         App.uploadTotal++
 
+        var headers = api.req_headers || []
+        var header = ''
+        for (var i = 0; i < headers.length; i ++) {
+          var item = headers[i];
+          var name = item == null ? null : item.name
+          if (name == null) {
+            continue
+          }
+          header += (i <= 0 ? '' : '\n') + name + ': ' + item.value
+            + (StringUtil.isEmpty(item.description, true) ? '' : '  // ' + item.description)
+        }
+
+        var typeAndParam = App.parseYApiTypeAndParam(api)
+
+        return App.uploadThirdPartyApi(typeAndParam.type, api.title, api.path, typeAndParam.param, header
+          , StringUtil.isEmpty(api.markdown, true) ? api.description : api.markdown)
+      },
+
+
+      parseYApiTypeAndParam: function (api) {
+        if (api == null) {
+          return {}
+        }
+
         var type
         var parameters
-        var isOther = false
         switch (api.req_body_type || '') {
           case 'form':
             type = REQUEST_TYPE_FORM
@@ -1893,7 +2094,6 @@
             parameters = api.req_query
             break
           default:
-            isOther = true
             type = REQUEST_TYPE_JSON
             parameters = api.req_body_other == null ? null : JSON.parse(api.req_body_other)
 
@@ -1908,18 +2108,6 @@
             }
             parameters = newParams
             break
-        }
-
-        var headers = api.req_headers || []
-        var header = ''
-        for (var i = 0; i < headers.length; i ++) {
-          var item = headers[i];
-          var name = item == null ? null : item.name
-          if (name == null) {
-            continue
-          }
-          header += (i <= 0 ? '' : '\n') + name + ' : ' + item.value
-            + (StringUtil.isEmpty(item.description, true) ? '' : '  // ' + item.description)
         }
 
         var parameters2 = []
@@ -1948,8 +2136,10 @@
           }
         }
 
-        return App.uploadThirdPartyApi(type, api.title, api.path, parameters2, header
-          , StringUtil.isEmpty(api.markdown, true) ? api.description : api.markdown)
+        return {
+          type: type,
+          param: parameters2
+        }
       },
 
       //上传第三方平台的 API 至 APIAuto
@@ -2762,7 +2952,7 @@
 
           try {
             var m = App.getMethod();
-            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language))
+            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, '/' + App.getMethod(), true))
               + '\n                                                                                                       '
               + '                                                                                                       \n';  //解决遮挡
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
@@ -2836,7 +3026,7 @@
       getTypeName: function (type) {
         var ts = this.types
         var t = type || REQUEST_TYPE_JSON
-        if (ts == null || ts.length <= 1 || (ts.length <= 2 && ts.indexOf(REQUEST_TYPE_PARAM) >= 0)) {
+        if (ts == null || ts.length <= 1 || (ts.length <= 2 && ts.indexOf(REQUEST_TYPE_PARAM) >= 0 && ts.indexOf(REQUEST_TYPE_GRPC) < 0)) {
           return t == REQUEST_TYPE_PARAM ? 'GET' : 'POST'
         }
         return t
@@ -2989,9 +3179,9 @@
         // axios.defaults.withcredentials = true
         axios({
           method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
-          url: (isAdminOperation == false && this.isDelegateEnabled ? (this.server + '/delegate?$_delegate_url=') : '' ) + StringUtil.noBlank(url),
+          url: (isAdminOperation == false && this.isDelegateEnabled ? (this.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '') + '$_delegate_url=') : '' ) + StringUtil.noBlank(url),
           params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
-          data: (type == REQUEST_TYPE_JSON ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
+          data: (type == REQUEST_TYPE_JSON || type == REQUEST_TYPE_GRPC ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
           headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
           withCredentials: true, //Cookie 必须要  type == REQUEST_TYPE_JSON
           crossDomain: true
@@ -4115,27 +4305,33 @@
           }
 
           // path User/id  key id@
-          const index = line.indexOf(' : '); //APIJSON Table:alias 前面不会有空格 //致后面就接 { 'a': 1} 报错 Unexpected token ':'   lastIndexOf(' : '); // indexOf(' : '); 可能会有 Comment:to
+          const index = line.indexOf(': '); //APIJSON Table:alias 前面不会有空格 //致后面就接 { 'a': 1} 报错 Unexpected token ':'   lastIndexOf(': '); // indexOf(': '); 可能会有 Comment:to
           const p_k = line.substring(0, index);
           const bi = p_k.indexOf(' ');
           const path = bi < 0 ? p_k : p_k.substring(0, bi); // User/id
 
           const pathKeys = path.split('/')
           if (pathKeys == null || pathKeys.length <= 0) {
-            throw new Error('随机测试 第 ' + i + ' 行格式错误！\n字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
-              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey : value  //注释\n的格式！其中 replaceKey 可省略。');
+            throw new Error('随机测试 第 ' + (i + 1) + ' 行格式错误！\n字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
+              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey: value  // 注释\n的格式！' +
+              '\n注意冒号 ": " 左边 0 空格，右边 1 空格！其中 replaceKey 可省略。' +
+              '\nkey: {} 中最外层常量对象 {} 必须用括号包裹为 ({})，也就是 key: ({}) 这种格式！' +
+              '\nkey: 多行代码 必须用 function f() { var a = 1; return a; } f() 这种一行代码格式！');
           }
 
           const lastKeyInPath = pathKeys[pathKeys.length - 1]
           const customizeKey = bi > 0;
           const key = customizeKey ? p_k.substring(bi + 1) : lastKeyInPath;
           if (key == null || key.trim().length <= 0) {
-            throw new Error('随机测试 第 ' + i + ' 行格式错误！\n字符 ' + key + ' 不是合法的 JSON key!' +
-              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey : value  // 注释\n的格式！其中 replaceKey 可省略。');
+            throw new Error('随机测试 第 ' + (i + 1) + ' 行格式错误！\n字符 ' + key + ' 不是合法的 JSON key!' +
+              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey: value  // 注释\n的格式！' +
+              '\n注意冒号 ": " 左边 0 空格，右边 1 空格！其中 replaceKey 可省略。' +
+              '\nkey: {} 中最外层常量对象 {} 必须用括号包裹为 ({})，也就是 key: ({}) 这种格式！' +
+              '\nkey: 多行代码 必须用 function f() { var a = 1; return a; } f() 这种一行代码格式！');
           }
 
           // value RANDOM_DB
-          const value = line.substring(index + ' : '.length);
+          const value = line.substring(index + ': '.length);
 
           var invoke = function (val, which, p_k, pathKeys, key, lastKeyInPath) {
             try {
@@ -4150,7 +4346,7 @@
                 else {
                   configVal = val
                 }
-                constConfigLines[which] = p_k + ' : ' + configVal;
+                constConfigLines[which] = p_k + ': ' + configVal;
               }
 
               if (generateName) {
@@ -4184,7 +4380,7 @@
                     current = parent[pathKeys[j]] = {}
                   }
                   if (parent instanceof Object == false) {
-                    throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中' +
+                    throw new Error('随机测试 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中' +
                       ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} 或 数组 [] !');
                   }
                   parent = current;
@@ -4204,7 +4400,7 @@
 
             }
             catch (e) {
-              throw new Error('第 ' + which + ' 行随机配置 key : value 后的 value 不合法！ \nerr: ' + e.message)
+              throw new Error('第 ' + (which + 1) + ' 行随机配置 key: value 后的 value 不合法！ \nerr: ' + e.message)
             }
 
             respCount ++;
@@ -4259,7 +4455,7 @@
               var data = (res || {}).data || {}
               if (data.code != CODE_SUCCESS) {
                 respCount = -reqCount;
-                vOutput.value = '随机测试 为第 ' + which + ' 行\n  ' + p_k + '  \n获取数据库数据 异常：\n' + data.msg;
+                vOutput.value = '随机测试 为第 ' + (which + 1) + ' 行\n  ' + p_k + '  \n获取数据库数据 异常：\n' + data.msg;
                 alert(StringUtil.get(vOutput.value));
                 return
                 // throw new Error('随机测试 为\n  ' + tableName + '/' + key + '  \n获取数据库数据 异常：\n' + data.msg)
@@ -4297,7 +4493,7 @@
 
           //支持 1, "a" 这种原始值
           // if (start < 0 || end <= start) {  //(1) 表示原始值  start*end <= 0 || start >= end) {
-          //   throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + value + ' 不是合法的随机函数!');
+          //   throw new Error('随机测试 第 ' + (i + 1) + ' 行格式错误！字符 ' + value + ' 不是合法的随机函数!');
           // }
 
           var toEval = value;
@@ -4321,7 +4517,7 @@
               if (Number.isSafeInteger(step) != true || step <= 0
                 || (StringUtil.isEmpty(stepStr, false) != true && StringUtil.isNumber(stepStr) != true)
               ) {
-                throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中字符 ' + stepStr + ' 不符合跨步 step 格式！'
+                throw new Error('随机测试 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中字符 ' + stepStr + ' 不符合跨步 step 格式！'
                   + '\n顺序整数 和 顺序取值 可以通过以下格式配置 升降序 和 跨步：'
                   + '\n  ODER_REAL+step(arg0, arg1...)\n  ODER_REAL-step(arg0, arg1...)'
                   + '\n  ODER_INT+step(arg0, arg1...)\n  ODER_INT-step(arg0, arg1...)'
@@ -5048,6 +5244,7 @@
       //无效，只能在index里设置 vUrl.value = this.getCache('', 'URL_BASE')
       this.listHistory()
       this.transfer()
+
     }
   })
 })()

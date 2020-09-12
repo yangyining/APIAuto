@@ -1,6 +1,7 @@
 # APIAuto (原名 APIJSONAuto)
 机器学习测试、自动生成代码、自动静态检查、自动生成文档与注释等，做最先进的接口管理工具。<br />
-支持 HTTP GET/POST API，智能显示和切换；支持一键导入 Swagger, Rap, YApi 等接口。<br />
+在常用功能上远超 Postman, Swagger, YApi, Rap 等其它各种 开源、商业 的 API 管理/测试 工具。<br />
+支持 HTTP GET/POST API，智能显示和切换；支持一键导入 Swagger, Rap, YApi 的用例和文档。<br />
 针对 APIJSON 做了静态检查、生成代码、格式化等大量优化。
 
 ### 特点功能
@@ -48,7 +49,7 @@
 
 ### 使用登记
 <div style="float:left">
-  <a href="http://www.transsion.com"><img src="http://www.transsion.com/static/images/logo.jpg" height="90"></a>
+  <a href="http://www.transsion.com"><img src="http://apijson.org:8000/images/www.transsion.com.jpeg" height="90"></a>
   <a href="http://shebaochina.com"><img src="http://shebaochina.com/static/cn/img/index/logo.png" height="90"></a>
   <a href="http://www.xmfish.com"><img src="http://www.xmfish.com/images/chanel/www/f_logo.gif" height="90"></a>
   <a href="http://www.xxwolo.com"><img src="http://img.qichacha.com/Product/a917fcca-fbb1-44a2-a079-56985ebf8f9c.jpg" height="90"></a>
@@ -68,7 +69,9 @@
 
 ### 关于作者
 TommyLemon：[https://github.com/TommyLemon](https://github.com/TommyLemon)<br />
-QQ技术交流群：734652054（免费）607020115（付费）
+QQ技术交流群：<br />
+734652054（免费）<a target="_blank" style="bottom:2px;padding-top:4px" href="https://qm.qq.com/cgi-bin/qm/qr?k=rJLwYzITdoQBfiGUOjMrM3eJDyks1tJP&jump_from=webapi"><img border="0" src="http://pub.idqqimg.com/wpa/images/group.png" alt="APIJSON-Free" title="APIJSON技术讨论群" style="bottom:2px;margin-top:4px" /></a>    
+607020115（付费）<a target="_blank" style="bottom:2px;padding-top:4px" href="https://qm.qq.com/cgi-bin/qm/qr?k=1wnUodOM6ngXnl0rubf06DuAUbOX-u44&jump_from=webapi"><img border="0" src="http://pub.idqqimg.com/wpa/images/group.png" alt="APIJSON-Fee" title="APIJSON付费解决群"  style="bottom:2px;margin-top:4px" /></a>    
 
 如果有什么问题或建议可以 [提ISSUE](https://github.com/TommyLemon/APIAuto/issues) 或 加群，交流技术，分享经验。<br >
 如果你解决了某些bug，或者新增了一些功能，欢迎 [贡献代码](https://github.com/TommyLemon/APIAuto/pulls)，感激不尽。
