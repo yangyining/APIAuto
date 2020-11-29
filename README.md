@@ -93,7 +93,7 @@
 右侧上方中间 3 个标签是默认的测试用户账号，点击登录/退出，左侧 - 删除，右侧 + 新增。<br />
 <br />
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br /> 
-[https://github.com/APIJSON/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/APIJSON/APIJSON/tree/master/APIJSON-Java-Server) 
+[https://github.com/Tencent/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/Tencent/APIJSON/tree/master/APIJSON-Java-Server) 
 
 
 ### 感谢开源
@@ -107,8 +107,8 @@
 [https://github.com/TommyLemon](https://github.com/TommyLemon)<br />
 
 ##### QQ群聊
-734652054（免费）<a target="_blank" style="bottom:2px;padding-top:4px" href="https://qm.qq.com/cgi-bin/qm/qr?k=rJLwYzITdoQBfiGUOjMrM3eJDyks1tJP&jump_from=webapi"><img border="0" src="http://pub.idqqimg.com/wpa/images/group.png" alt="APIJSON-Free" title="APIJSON技术讨论群" style="bottom:2px;margin-top:4px" /></a>    
-607020115（付费）<a target="_blank" style="bottom:2px;padding-top:4px" href="https://qm.qq.com/cgi-bin/qm/qr?k=1wnUodOM6ngXnl0rubf06DuAUbOX-u44&jump_from=webapi"><img border="0" src="http://pub.idqqimg.com/wpa/images/group.png" alt="APIJSON-Fee" title="APIJSON付费解决群"  style="bottom:2px;margin-top:4px" /></a>    
+734652054（新）<a target="_blank" style="bottom:2px;padding-top:4px" href="https://qm.qq.com/cgi-bin/qm/qr?k=rJLwYzITdoQBfiGUOjMrM3eJDyks1tJP&jump_from=webapi"><img border="0" src="http://pub.idqqimg.com/wpa/images/group.png" alt="APIJSON-Free" title="APIJSON技术讨论群" style="bottom:2px;margin-top:4px" /></a>    
+607020115（旧）<a target="_blank" style="bottom:2px;padding-top:4px" href="https://qm.qq.com/cgi-bin/qm/qr?k=1wnUodOM6ngXnl0rubf06DuAUbOX-u44&jump_from=webapi"><img border="0" src="http://pub.idqqimg.com/wpa/images/group.png" alt="APIJSON-Fee" title="APIJSON付费解决群"  style="bottom:2px;margin-top:4px" /></a>    
 
 如果有什么问题或建议可以 [提ISSUE](https://github.com/TommyLemon/APIAuto/issues) 或 加群，交流技术，分享经验。<br >
 如果你解决了某些bug，或者新增了一些功能，欢迎 [贡献代码](https://github.com/TommyLemon/APIAuto/pulls)，感激不尽。
@@ -118,13 +118,13 @@
 
 
 ### 其它项目
-[APIJSON](https://github.com/APIJSON/APIJSON) 🏆码云最有价值开源项目 🚀后端接口和文档自动化，前端(客户端) 定制返回 JSON 的数据和结构！
+[APIJSON](https://github.com/Tencent/APIJSON) 🏆码云最有价值开源项目 🚀后端接口和文档自动化，前端(客户端) 定制返回 JSON 的数据和结构！
 
 [apijson-doc](https://github.com/vincentCheng/apijson-doc) APIJSON 官方文档，提供排版清晰、搜索方便的文档内容展示，包括设计规范、图文教程等
 
 [APIJSONdocs](https://github.com/ruoranw/APIJSONdocs) APIJSON 英文文档，提供排版清晰的文档内容展示，包括详细介绍、设计规范、使用方式等
 
-[apijson.org](https://github.com/APIJSON/apijson.org) APIJSON 官方网站，提供 APIJSON 的 功能简介、登记用户、作者与贡献者、相关链接 等
+[apijson.org](https://github.com/APIJSON/APIJSON.org) APIJSON 官方网站，提供 APIJSON 的 功能简介、登记用户、作者与贡献者、相关链接 等
 
 [APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON ，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite
 

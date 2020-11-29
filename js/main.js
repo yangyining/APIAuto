@@ -526,7 +526,7 @@
       isExportRandom: false,
       isTestCaseShow: false,
       isHeaderShow: false,
-      isRandomShow: true,  //默认展示
+      isRandomShow: true,  // 默认展示
       isRandomListShow: false,
       isRandomSubListShow: false,
       isRandomEditable: false,
@@ -565,7 +565,7 @@
         balance: null //点击更新提示需要判空 0.00
       },
       type: REQUEST_TYPE_JSON,
-      types: [ REQUEST_TYPE_JSON, REQUEST_TYPE_PARAM ],  //默认展示
+      types: [ REQUEST_TYPE_PARAM, REQUEST_TYPE_JSON, REQUEST_TYPE_FORM, REQUEST_TYPE_DATA,  REQUEST_TYPE_GRPC ],  //默认展示
       host: '',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
@@ -808,7 +808,7 @@
           var item
           for (var i = 0; i < hs.length; i++) {
             item = hs[i]
-            var index = item.indexOf('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
+            var index = item.lastIndexOf('  //')  // 不加空格会导致 http:// 被截断  ('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
             var item2 = index < 0 ? item : item.substring(0, index)
             item2 = item2.trim()
             if (item2.length <= 0) {
@@ -969,7 +969,7 @@
                 alert('自动生成代码，可填语言:\nKotlin,Java,Swift,Objective-C,C#,Go,\nTypeScript,JavaScript,PHP,Python,C++')
               }
               else if (index == 7) {
-                alert('多个类型用 , 隔开，可填类型:\nPARAM(GET ?a=1&b=c&key=value),\nJSON(POST application/json),\nFORM(POST x-www-form-urlencoded),\nDATA(POST form-data)')
+                alert('多个类型用 , 隔开，可填类型:\nPARAM(GET ?a=1&b=c&key=value),\nJSON(POST application/json),\nFORM(POST x-www-form-urlencoded),\nDATA(POST form-data),\nGRPC(POST application/json 需要 GRPC 服务开启反射)')
               }
               else if (index == 8) {
                 alert('例如：\nSWAGGER http://apijson.cn:8080/v2/api-docs\nSWAGGER /v2/api-docs  // 省略 Host\nSWAGGER /  // 省略 Host 和 分支 URL\nRAP /repository/joined /repository/get\nYAPI /api/interface/list_menu /api/interface/get')
@@ -1271,7 +1271,7 @@
         if (App.isExportRemote == false) { //下载到本地
 
           if (App.isTestCaseShow) { //文档
-            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/APIJSON/APIJSON'
+            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/Tencent/APIJSON'
               + '\n\nBASE_URL: ' + this.getBaseUrl()
               + '\n\n\n## 测试用例(Markdown格式，可用工具预览) \n\n' + App.getDoc4TestCase()
               + '\n\n\n\n\n\n\n\n## 文档(Markdown格式，可用工具预览) \n\n' + doc
@@ -1372,7 +1372,7 @@
                 break;
             }
 
-            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/APIJSON/APIJSON'
+            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/Tencent/APIJSON'
               + '\n\n\nURL: ' + StringUtil.get(vUrl.value)
               + '\n\n\nHeader:\n' + StringUtil.get(vHeader.value)
               + '\n\n\nRequest:\n' + StringUtil.get(vInput.value)
@@ -1422,7 +1422,6 @@
               config: vRandom.value
             },
             'TestRecord': {
-              'userId': App.User.id,
               'response': JSON.stringify(currentResponse),
               'standard': isML ? JSON.stringify(stddObj) : null
             },
@@ -1430,7 +1429,6 @@
           } : {
             format: false,
             'Document': {
-              'userId': App.User.id,
               'testAccountId': currentAccountId,
               'name': App.exTxt.name,
               'type': App.type,
@@ -1440,7 +1438,6 @@
             },
             'TestRecord': {
               'randomId': 0,
-              'userId': App.User.id,
               'host': App.getBaseUrl(),
               'testAccountId': currentAccountId,
               'response': JSON.stringify(currentResponse),
@@ -1547,16 +1544,16 @@
 
               prefix = '\n' + (childPath == null || childPath == '' ? '' : childPath + '/') + k + '/'
               if (v.hasOwnProperty('page')) {
-                config += prefix + 'page : ' + 'ORDER_INT(0, 10)'
+                config += prefix + 'page: ' + 'ORDER_INT(0, 10)'
                 delete v.page
               }
               if (v.hasOwnProperty('count')) {
-                config += prefix + 'count : ' + 'ORDER_IN(undefined, null, 0, 1, 5, 10, 20'
+                config += prefix + 'count: ' + 'ORDER_IN(undefined, null, 0, 1, 5, 10, 20'
                   + ([0, 1, 5, 10, 20].indexOf(v.count) >= 0 ? ')' : ', ' + v.count + ')')
                 delete v.count
               }
               if (v.hasOwnProperty('query')) {
-                config += prefix + 'query : ' + 'ORDER_IN(undefined, null, 0, 1, 2)'
+                config += prefix + 'query: ' + 'ORDER_IN(undefined, null, 0, 1, 2)'
                 delete v.query
               }
             }
@@ -2439,19 +2436,19 @@
               },
               'TestRecord': {
                 'documentId@': '/Document/id',
-                'testAccountId': this.getCurrentAccountId(),
+		'userId': App.User.id,
+                'testAccountId': App.getCurrentAccountId(),
                 'randomId': 0,
                 '@order': 'date-',
-                '@column': 'id,userId,documentId,response' + (this.isMLEnabled ? ',standard' : ''),
-                'userId': this.User.id,
-                '@having': this.isMLEnabled ? 'length(standard)>2' : null  //用 MySQL 5.6   '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
+                '@column': 'id,userId,documentId,response' + (App.isMLEnabled ? ',standard' : ''),
+                '@having': App.isMLEnabled ? 'length(standard)>2' : null  //用 MySQL 5.6   '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
               }
             },
             '@role': 'LOGIN'
           }
 
-          this.onChange(false)
-          this.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
+          App.onChange(false)
+          App.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
             App.onResponse(url, res, err)
 
             var rpObj = res.data
@@ -2598,7 +2595,7 @@
         }
       },
 
-      showLogin(show, isAdmin) {
+      showLogin: function (show, isAdmin) {
         this.isLoginShow = show
         this.isAdminOperation = isAdmin
 
@@ -2612,8 +2609,8 @@
 
         if (user == null || StringUtil.isEmpty(user.phone, true)) {
           user = {
-            phone: 13000082001,
-            password: 123456
+            phone: '13000082001',
+            password: '123456'
           }
         }
 
@@ -3184,7 +3181,7 @@
           data: (type == REQUEST_TYPE_JSON || type == REQUEST_TYPE_GRPC ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
           headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
           withCredentials: true, //Cookie 必须要  type == REQUEST_TYPE_JSON
-          crossDomain: true
+          // crossDomain: true
         })
           .then(function (res) {
             res = res || {}
@@ -3508,11 +3505,12 @@
         }
 
         s += '\n\n#### 开放源码 '
-          + '\nAPIJSON 接口工具: https://github.com/TommyLemon/APIAuto '
+          + '\nAPIJSON 接口测试: https://github.com/TommyLemon/APIAuto '
+          + '\nAPIJSON 单元测试: https://github.com/TommyLemon/UnitAuto '
           + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
           + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
           + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.org '
-          + '\nAPIJSON -Java版: https://github.com/APIJSON/APIJSON '
+          + '\nAPIJSON -Java版: https://github.com/Tencent/APIJSON '
           + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
           + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
           + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
@@ -3533,11 +3531,11 @@
         }
         doc = d;
         vOutput.value += (
-          '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/APIJSON/APIJSON/blob/master/Document.md#3.2) \n### 数据字典\n自动查数据库表和字段属性来生成 \n\n' + d
+          '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/Tencent/APIJSON/blob/master/Document.md#3.2) \n### 数据字典\n自动查数据库表和字段属性来生成 \n\n' + d
           + '<h3 align="center">简介</h3>'
           + '<p align="center">本站为 APIAuto-自动化接口管理平台'
           + '<br>提供 接口和文档托管、机器学习自动化测试、自动生成文档和代码 等服务'
-          + '<br>由 <a href="https://github.com/TommyLemon/APIAuto" target="_blank">APIAuto(前端网页工具)</a>, <a href="https://github.com/APIJSON/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
+          + '<br>由 <a href="https://github.com/TommyLemon/APIAuto" target="_blank">APIAuto(前端网页工具)</a>, <a href="https://github.com/Tencent/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
           + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
           + '<br>Copyright &copy; 2016-' + new Date().getFullYear() + ' Tommy Lemon<br><br></p>'
         );
@@ -3557,9 +3555,9 @@
         var page = this.page || 0
 
         var search = StringUtil.isEmpty(this.search, true) ? null : '%' + StringUtil.trim(this.search) + '%'
-        this.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
+        App.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
           format: false,
-          '@database': this.database,
+          '@database': App.database,
           'sql@': {
             'from': 'Access',
             'Access': {
@@ -4293,7 +4291,7 @@
           const lineItem = lines[i] || '';
 
           // remove comment
-          const commentIndex = lineItem.indexOf('//');
+          const commentIndex = lineItem.lastIndexOf('  //'); //  -1; // eval 本身支持注释 eval('1 // test') = 1 lineItem.indexOf('  //');
           const line = commentIndex < 0 ? lineItem : lineItem.substring(0, commentIndex).trim();
 
           if (line.length <= 0) {
@@ -4866,7 +4864,7 @@
         var testRecord = item.TestRecord = item.TestRecord || {}
 
         saveTextAs(
-          '# APIJSON自动化回归测试-前\n主页: https://github.com/APIJSON/APIJSON'
+          '# APIJSON自动化回归测试-前\n主页: https://github.com/Tencent/APIJSON'
           + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
           + '\n返回结果: \n' + JSON.stringify(JSON.parse(testRecord.response || '{}'), null, '    ')
           , '测试：' + document.name + '-前.txt'
@@ -4881,7 +4879,7 @@
         setTimeout(function () {
           var tests = App.tests[String(App.currentAccountIndex)] || {}
           saveTextAs(
-            '# APIJSON自动化回归测试-后\n主页: https://github.com/APIJSON/APIJSON'
+            '# APIJSON自动化回归测试-后\n主页: https://github.com/Tencent/APIJSON'
             + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
             + '\n返回结果: \n' + JSON.stringify(tests[document.id][isRandom ? random.id : 0] || {}, null, '    ')
             , '测试：' + document.name + '-后.txt'
@@ -4891,7 +4889,7 @@
           if (StringUtil.isEmpty(testRecord.standard, true) == false) {
             setTimeout(function () {
               saveTextAs(
-                '# APIJSON自动化回归测试-标准\n主页: https://github.com/APIJSON/APIJSON'
+                '# APIJSON自动化回归测试-标准\n主页: https://github.com/Tencent/APIJSON'
                 + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
                 + '\n测试结果: \n' + JSON.stringify(testRecord.compare || '{}', null, '    ')
                 + '\n测试标准: \n' + JSON.stringify(JSON.parse(testRecord.standard || '{}'), null, '    ')
@@ -5007,14 +5005,12 @@
             const req = {
               Random: isNewRandom != true ? null : {
                 toId: random.toId,
-                userId: App.User.id,
                 documentId: random.documentId,
                 name: random.name,
                 count: random.count,
                 config: random.config
               },
               TestRecord: {
-                userId: App.User.id, //TODO 权限问题？ item.userId,
                 documentId: isNewRandom ? null : (isRandom ? random.documentId : document.id),
                 randomId: isRandom && ! isNewRandom ? random.id : null,
                 host: App.getBaseUrl(),
