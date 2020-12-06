@@ -36,31 +36,14 @@
 腾讯 AI 测试圈子演讲(部分)
 </h3>
 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.001.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.002.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.003.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.004.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.005.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.006.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.007.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.008.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.009.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.010.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.011.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.012.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.013.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.014.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.015.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.016.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.017.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.018.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.019.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.020.jpeg)
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.021.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.022.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.023.jpeg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.024.jpeg) 
-
+![](https://oscimg.oschina.net/oscnet/up-88c1699d9e1cd17d67705cb8b0271030daf.JPEG) 
+![](https://oscimg.oschina.net/oscnet/up-9cfe7bf3ed3d7f0b5053694f5042b4d36ed.JPEG) 
+![](https://oscimg.oschina.net/oscnet/up-520f379b2d0e9be7415963a69e940d0fc4c.JPEG) 
+![](https://oscimg.oschina.net/oscnet/up-9ae302efd6c74c20c393ad7ead39be8adba.JPEG) 
+![](https://oscimg.oschina.net/oscnet/up-fd316d5b63060f75ec1790a657497ad6286.JPEG) 
+![](https://oscimg.oschina.net/oscnet/up-6ffb15bdcc7d54fedb55d2368c1e0ba72f3.JPEG) 
+![](https://oscimg.oschina.net/oscnet/up-d3075ac2a481ddd89e28818b461ecc3f66c.JPEG) 
+![](https://oscimg.oschina.net/oscnet/up-442dd6c67edf259327f34b25e4d7e7c5b15.JPEG) 
 
 
 <br />
@@ -93,7 +76,7 @@
 右侧上方中间 3 个标签是默认的测试用户账号，点击登录/退出，左侧 - 删除，右侧 + 新增。<br />
 <br />
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br /> 
-[https://github.com/Tencent/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/Tencent/APIJSON/tree/master/APIJSON-Java-Server) 
+https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 
 
 ### 感谢开源
