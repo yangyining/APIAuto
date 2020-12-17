@@ -16,17 +16,19 @@
 
 ---
 
-机器学习测试、自动生成代码、自动静态检查、自动生成文档与注释等，做最先进的接口管理工具。<br />
+敏捷开发最强大易用的接口 文档/测试工具，机器学习零代码测试、生成代码与静态检查、生成文档与光标悬浮注释。<br />
 在常用功能上远超 Postman, Swagger, YApi, Rap 等其它各种 开源、商业 的 API 文档/测试 工具。<br />
 支持 HTTP GET/POST API，智能显示和切换；支持一键导入 Swagger, Rap, YApi 的用例和文档。<br />
-不仅适用于 RESTful、类 RESTful、GRPC 的 API，还是腾讯 [APIJSON](https://github.com/Tencent/APIJSON) 官方建议的文档与测试工具。
+不仅适用于 RESTful、类 RESTful、GRPC 的 API，还是腾讯 [APIJSON](https://github.com/Tencent/APIJSON) 官方建议的文档与测试工具。<br />
+内部用户包括 腾讯互娱、腾讯技术工程 等事业部，外部用户包含 500强上市公司深圳传音、行业领头羊社保科技 等。
 
 ### 特点功能
 
-* 自动生成接口文档，清晰可读永远最新
-* 自动校验与格式化，支持高亮和收展
-* 自动生成各种语言代码，一键下载
-* 自动管理与测试接口用例，一键共享
+* 自动生成接口文档，光标悬浮注释
+* 自动校验与格式化参数，支持高亮和收展
+* 自动生成各种语言前后端代码，一键下载
+* 自动机器学习零代码测试接口，一键运行
+* 自动管理接口测试用例，一键共享
 * 自动给请求JSON加注释，一键切换
 * 自动保存历史请求记录，一键恢复
 
@@ -101,7 +103,7 @@ https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 
 
 ### 其它项目
-[APIJSON](https://github.com/Tencent/APIJSON) 🏆码云最有价值开源项目 🚀后端接口和文档自动化，前端(客户端) 定制返回 JSON 的数据和结构！
+[APIJSON](https://github.com/Tencent/APIJSON) 腾讯零代码、热更新、自动化 ORM 库 🏆 后端接口和文档自动化，前端(客户端) 定制返回 JSON 的数据和结构
 
 [apijson-doc](https://github.com/vincentCheng/apijson-doc) APIJSON 官方文档，提供排版清晰、搜索方便的文档内容展示，包括设计规范、图文教程等
 
