@@ -7,7 +7,7 @@
 <p align="center" >
   <a href="https://github.com/TommyLemon/APIAuto#%E9%83%A8%E7%BD%B2%E6%96%B9%E6%B3%95">使用文档</a>
   <a href="http://i.youku.com/apijson">视频教程</a>
-  <a href="http://apijson.org/auto">在线体验</a>
+  <a href="http://apijson.cn/api">在线体验</a>
 </p>
 
 <p align="center" >
@@ -15,8 +15,7 @@
 </p>
 
 ---
-
-敏捷开发最强大易用的接口 文档/测试工具，机器学习零代码测试、生成代码与静态检查、生成文档与光标悬浮注释。<br />
+敏捷开发最强大易用的 HTTP 接口工具，机器学习零代码测试、生成代码与静态检查、生成文档与光标悬浮注释。<br />
 在常用功能上远超 Postman, Swagger, YApi, Rap 等其它各种 开源、商业 的 API 文档/测试 工具。<br />
 支持 HTTP GET/POST API，智能显示和切换；支持一键导入 Swagger, Rap, YApi 的用例和文档。<br />
 不仅适用于 RESTful、类 RESTful、GRPC 的 API，还是腾讯 [APIJSON](https://github.com/Tencent/APIJSON) 官方建议的文档与测试工具。<br />
@@ -69,7 +68,7 @@
 ### 部署方法
 
 可以直接下载源码解压后用浏览器打开 index.html，建议用 Chrome 或 火狐 (Safari、Edge、IE 等可能有兼容问题)。<br />
-也可以直接访问官网的线上环境 http://apijson.org/auto 或开发环境 http://apijson.org:8000/auto 。<br />
+也可以直接访问官网的线上环境 http://apijson.cn/api 或开发环境 http://apijson.org:8000/api 。<br />
 <br />
 把左侧 URL 输入框内基地址改为你主机的地址(例如 http://localhost:8080 )，<br />
 然后在右上角 设置 下拉菜单内修改 数据库类型Database、数据库模式Schema。<br />
@@ -79,6 +78,13 @@
 <br />
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br /> 
 https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
+
+### 常见问题
+#### 1.无法访问接口
+https://github.com/TommyLemon/APIAuto/issues/9
+
+#### 2.没有生成文档
+https://github.com/Tencent/APIJSON/issues/85
 
 
 ### 感谢开源
@@ -129,7 +135,7 @@ https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 
 [SpringServer1.2-APIJSON](https://github.com/Airforce-1/SpringServer1.2-APIJSON) 智慧党建服务器端，提供 上传 和 下载 文件的接口
 
-[UnitAuto](https://github.com/TommyLemon/UnitAuto) 机器学习自动化单元测试平台，零代码、全方位、自动化 测试 方法/函数 的正确性和可用性
+[UnitAuto](https://github.com/TommyLemon/UnitAuto) 机器学习单元测试平台，零代码、全方位、自动化 测试 方法/函数 的正确性和可用性
 
 感谢热心的作者们的贡献，点 ⭐Star 支持下他们吧。
 

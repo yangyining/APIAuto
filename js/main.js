@@ -568,8 +568,8 @@
       type: REQUEST_TYPE_JSON,
       types: [ REQUEST_TYPE_PARAM, REQUEST_TYPE_JSON, REQUEST_TYPE_FORM, REQUEST_TYPE_DATA,  REQUEST_TYPE_GRPC ],  //默认展示
       host: '',
-      database: 'MYSQL',// 'POSTGRESQL',
-      schema: 'sys',
+      database: 'MYSQL', // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释  'MYSQL',// 'POSTGRESQL',
+      schema: 'sys',  // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释   'sys',
       server: 'http://apijson.org:9090',  //apijson.org:8000
       // server: 'http://47.74.39.68:9090',  // apijson.org
       thirdParty: 'SWAGGER /v2/api-docs',  //apijson.org:8000
@@ -2656,8 +2656,8 @@
           remember: vRemember.checked,
           format: false,
           defaults: {
-            '@database': App.database,
-            '@schema': App.schema
+            '@database': StringUtil.isEmpty(App.database, true) ? undefined : App.database,
+            '@schema': StringUtil.isEmpty(App.schema, true) ? undefined : App.schema
           }
         }
 
@@ -2692,6 +2692,10 @@
               var item = App.accounts[App.currentAccountIndex]
               item.isLoggedIn = false
               App.onClickAccount(App.currentAccountIndex, item) //自动登录测试账号
+
+              if (user.id > 0) {
+                App.showTestCase(true, false)
+              }
             }
 
           })
@@ -3540,7 +3544,6 @@
             + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
             + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
             + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
-            + '\nAPIJSON - Go 版: https://github.com/crazytaxi824/APIJSON '
             + '\nAPIJSON -Python: https://github.com/zhangchunlin/uliweb-apijson '
             + '\n感谢热心的作者们的贡献，GitHub 右上角点 ⭐Star 支持下他们吧 ^_^';
         }
@@ -3559,12 +3562,14 @@
         doc = d;
         vOutput.value += (
           '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/Tencent/APIJSON/blob/master/Document.md#3.2) \n### 数据字典\n自动查数据库表和字段属性来生成 \n\n' + d
-          + '<h3 align="center">简介</h3>'
-          + '<p align="center">本站为 APIAuto-自动化接口管理平台'
-          + '<br>提供 接口和文档托管、机器学习自动化测试、自动生成文档和代码 等服务'
+          + '<h3 align="center">关于</h3>'
+          + '<p align="center">APIAuto-机器学习 HTTP 接口工具'
+          + '<br>机器学习零代码测试、生成代码与静态检查、生成文档与光标悬浮注释'
           + '<br>由 <a href="https://github.com/TommyLemon/APIAuto" target="_blank">APIAuto(前端网页工具)</a>, <a href="https://github.com/Tencent/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
           + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
-          + '<br>Copyright &copy; 2016-' + new Date().getFullYear() + ' Tommy Lemon<br><br></p>'
+          + '<br>Copyright &copy; 2016-' + new Date().getFullYear() + ' Tommy Lemon'
+          // + '<br><a href="https://beian.miit.gov.cn/" target="_blank"><span >粤ICP备18005508号-1</span></a>'
+          + '</p><br><br>'
         );
 
         App.view = 'markdown';
@@ -3584,7 +3589,8 @@
         var search = StringUtil.isEmpty(this.search, true) ? null : '%' + StringUtil.trim(this.search) + '%'
         App.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
           format: false,
-          '@database': App.database,
+          '@database': StringUtil.isEmpty(App.database, true) ? undefined : App.database,
+          // '@schema': StringUtil.isEmpty(App.schema, true) ? undefined : App.schema,
           'sql@': {
             'from': 'Access',
             'Access': {
@@ -4752,19 +4758,19 @@
             break;
           case JSONResponse.COMPARE_KEY_MORE:
             it.compareColor = 'green'
-            it.compareMessage = '新增字段/新增值'
+            it.compareMessage = '新增字段/新增值 等'
             break;
           case JSONResponse.COMPARE_VALUE_CHANGE:
             it.compareColor = 'blue'
-            it.compareMessage = '值改变'
+            it.compareMessage = '值改变 等'
             break;
           case JSONResponse.COMPARE_KEY_LESS:
             it.compareColor = 'orange'
-            it.compareMessage = '缺少字段/整数变小数'
+            it.compareMessage = '缺少字段/整数变小数 等'
             break;
           case JSONResponse.COMPARE_TYPE_CHANGE:
             it.compareColor = 'red'
-            it.compareMessage = '状态码/异常/值类型 改变'
+            it.compareMessage = '状态码/异常/值类型 改变等'
             break;
           default:
             it.compareColor = 'white'
@@ -5013,18 +5019,63 @@
             // }
 
 
-            var standard = StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard);
+            var standard = (StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard)) || {};
+
             var code = currentResponse.code;
             var thrw = currentResponse.throw;
+            var msg = currentResponse.msg;
+
+            var hasCode = standard.code != null;
+            var isCodeChange = standard.code != code;
+            var exceptions = standard.exceptions || [];
+
             delete currentResponse.code; //code必须一致
             delete currentResponse.throw; //throw必须一致
 
-            var isML = this.isMLEnabled;
-            var stddObj = isML ? JSONResponse.updateStandard(standard || {}, currentResponse) : {};
-            stddObj.code = code;
+            var find = false;
+            if (isCodeChange && hasCode) {  // 走异常分支
+              for (var i = 0; i < exceptions.length; i++) {
+                var ei = exceptions[i];
+                if (ei != null && ei.code == code && ei.throw == thrw) {
+                  find = true;
+                  ei.repeat = (ei.repeat || 0) + 1;  // 统计重复出现次数
+                  break;
+                }
+              }
+
+              if (find) {
+                delete currentResponse.msg;
+              }
+            }
+
+            var isML = this.isMLEnabled;  // 异常分支不合并内容，只记录 code, throw, msg 等关键信息
+            var stddObj = isML ? (isCodeChange && hasCode ? standard : JSONResponse.updateStandard(standard, currentResponse)) : {};
+
             currentResponse.code = code;
-            stddObj.throw = thrw;
             currentResponse.throw = thrw;
+
+            if (isCodeChange) {
+              if (hasCode != true) {  // 走正常分支
+                stddObj.code = code;
+                stddObj.throw = thrw;
+              }
+              else {  // 走异常分支
+                currentResponse.msg = msg;
+
+                if (find != true) {
+                  exceptions.push({
+                    code: code,
+                    'throw': thrw,
+                    msg: msg
+                  })
+
+                  stddObj.exceptions = exceptions;
+                }
+              }
+            }
+            else {
+              stddObj.repeat = (stddObj.repeat || 0) + 1;  // 统计重复出现次数
+            }
 
             const isNewRandom = isRandom && random.id <= 0
 
@@ -5271,6 +5322,11 @@
       this.listHistory()
       this.transfer()
 
+      if (this.User != null && this.User.id != null && this.User.id > 0) {
+        setTimeout(function () {
+          App.showTestCase(true, false)  // 本地历史仍然要求登录  App.User == null || App.User.id == null)
+        }, 1000)
+      }
     }
   })
 })()
