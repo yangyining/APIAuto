@@ -103,7 +103,7 @@
 
         try {
           if (val instanceof Array) {
-            if (val[0] instanceof Object && (val[0] instanceof Array == false) && JSONObject.isArrayKey(key, null, isRestful)) {
+            if (val[0] instanceof Object && (val[0] instanceof Array == false)) {  // && JSONObject.isArrayKey(key, null, isRestful)) {
               // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
 
               var ckey = key.substring(0, key.lastIndexOf('[]'));
@@ -215,12 +215,19 @@
         var s = ''
 
         try {
+          var standardObj = null;
+          try {
+            var currentItem = App.isTestCaseShow ? App.remotes[App.currentDocIndex] : App.currentRemoteItem;
+            standardObj = JSON.parse(((currentItem || {}).TestRecord || {}).standard);
+          } catch (e3) {
+            log(e3)
+          }
 
           var path = null
           var table = null
           var column = null
 
-          var method = App.getMethod();
+          var method = App.isTestCaseShow ? ((App.currentRemoteItem || {}).Document || {}).url : App.getMethod();
           var mIndex = method == null ? -1 : method.indexOf('/');
           var isRestful = mIndex > 0 && mIndex < method.length - 1;
 
@@ -297,13 +304,13 @@
 
                   var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
 
-                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, App.language, true, false, pathUri.split('/'), isRestful, val); // this.getResponseHint({}, table, $event
+                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj); // this.getResponseHint({}, table, $event
                   s0 = column + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
                 }
 
                 var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + (StringUtil.isEmpty(column) ? key : column);
 
-                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : null, App.getMethod(), App.database, App.language, true, false, pathUri.split('/'), isRestful, val);
+                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : null, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj);
                 s = (StringUtil.isEmpty(path) ? '' : path + '/') + key + ' 中 '
                   + (
                     StringUtil.isEmpty(c, true) ? '' : table + ': '
@@ -326,7 +333,7 @@
           // alert('setResponseHint  table = ' + table + '; column = ' + column)
 
           var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
-          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val);
+          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj);
 
           s += pathUri + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
         }
@@ -537,7 +544,23 @@
       isConfigShow: false,
       isDeleteShow: false,
       currentDocItem: {},
-      currentRemoteItem: {},
+      currentRemoteItem: {
+        "Document":  {
+          "id": 1560244940013 ,
+          "userId": 82001 ,
+          "testAccountId": 82001 ,
+          "version": 3 ,
+          "name": "测试查询" ,
+          "type": "JSON" ,
+          "url": "/get" ,
+          "date": "2019-06-11 17:22:20.0"
+        },
+        "TestRecord":  {
+          "id": 1615135440014 ,
+          "userId": 82001 ,
+          "documentId": 1560244940013
+        }
+      },
       currentRandomItem: {},
       isAdminOperation: false,
       loginType: 'login',
@@ -547,6 +570,7 @@
       isMLEnabled: false,
       isDelegateEnabled: false,
       isPreviewEnabled: false,
+      isEditResponse: false,
       isLocalShow: false,
       uploadTotal: 0,
       uploadDoneCount: 0,
@@ -854,7 +878,7 @@
           }
 
           var tag = App.getTag()
-          App.history.name = App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag) + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
+          App.history.name = (App.urlComment || App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag)) + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
         }
         App.isSaveShow = show
       },
@@ -868,16 +892,22 @@
               alert('请先输入请求内容！')
               return
             }
-            if (App.view != 'code') {
-              alert('请先测试请求，确保是正确可用的！')
+            if (App.view == 'error') {  // App.view != 'code') {
+              alert('发现错误，请输入正确的内容！')  // alert('请先测试请求，确保是正确可用的！')
               return
             }
             if (isRandom) {
               App.exTxt.name = '随机配置 ' + App.formatDateTime()
             }
             else {
-              var tag = App.getTag()
-              App.exTxt.name = App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag)
+              if (App.isEditResponse) {
+                App.isExportRemote = isRemote
+                App.exportTxt()
+                return
+              }
+
+              // var tag = App.getTag()
+              App.exTxt.name = App.urlComment || ''  // 避免偷懒不输入名称  App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag)
             }
           }
           else { //下载到本地
@@ -976,11 +1006,19 @@
                 alert('多个类型用 , 隔开，可填类型:\nPARAM(GET ?a=1&b=c&key=value),\nJSON(POST application/json),\nFORM(POST x-www-form-urlencoded),\nDATA(POST form-data),\nGRPC(POST application/json 需要 GRPC 服务开启反射)')
               }
               else if (index == 8) {
+                App.isHeaderShow = true
+
                 alert('例如：\nSWAGGER http://apijson.cn:8080/v2/api-docs\nSWAGGER /v2/api-docs  // 省略 Host\nSWAGGER /  // 省略 Host 和 分支 URL\nRAP /repository/joined /repository/get\nYAPI /api/interface/list_menu /api/interface/get')
 
                 try {
                   App.getThirdPartyApiList(this.thirdParty, function (platform, docUrl, listUrl, itemUrl, url_, res, err) {
                     CodeUtil.thirdParty = platform
+                    if (err != null || ((res || {}).data || {}).errCode != 0) {
+                      App.isHeaderShow = true
+                      App.isRandomShow = false
+                      alert('请把 YApi/Rap/Swagger 等网站的有效 Cookie 粘贴到请求头 Request Header 输入框后再试！')
+                    }
+
                     App.onResponse(url_, res, err)
                     return false
                   }, function (platform, docUrl, listUrl, itemUrl, url_, res, err) {
@@ -997,13 +1035,22 @@
                     }
                     else if (platform == PLATFORM_YAPI) {
                       var api = (data || {}).data
-                      var typeAndParam = App.parseYApiTypeAndParam(api)
-                      api = api || {}
-                      var url = api.path
+                      var url = api == null || api.path == null ? null : StringUtil.noBlank(api.path).replace(/\/\//g, '/')
+                      if (StringUtil.isEmpty(url, true)) {
+                        return
+                      }
 
+                      var typeAndParam = App.parseYApiTypeAndParam(api)
+
+                      var name = StringUtil.trim(api.username) + ': ' + StringUtil.trim(api.title)
                       apiMap[url] = {
+                        name: name,
                         request: typeAndParam.param,
-                        response: api.res_body == null ? null : JSON.parse(api.res_body)
+                        response: api.res_body == null ? null : JSON.parse(api.res_body),
+                        detail: name
+                        + '\n' + (api.up_time == null ? '' : (typeof api.up_time != 'number' ? api.up_time : new Date(1000*api.up_time).toLocaleString()))
+                        + '\nhttp://apijson.org/yapi/project/1/interface/api/' + api._id
+                        + '\n\n' + (StringUtil.isEmpty(api.markdown, true) ? StringUtil.trim(api.description) : api.markdown.trim().replace(/\\_/g, '_'))
                       }
                     }
                     else {
@@ -1012,6 +1059,8 @@
                     }
 
                     CodeUtil.thirdPartyApiMap = apiMap
+                    App.saveCache(App.thirdParty, 'thirdPartyApiMap', apiMap);
+
                     return true
                   })
                 } catch (e) {
@@ -1044,6 +1093,24 @@
 
               App.onChange(false)
               break
+            case 11:
+              var did = ((App.currentRemoteItem || {}).Document || {}).id
+              if (did == null) {
+                alert('请先选择一个已上传的用例！')
+                return
+              }
+
+              App.isEditResponse = show
+              // App.saveCache('', 'isEditResponse', show)
+
+              vInput.value = ((App.view != 'code' || StringUtil.isEmpty(App.jsoncon, true) ? null : App.jsoncon)
+                || (App.currentRemoteItem.TestRecord || {}).response) || ''
+
+              vHeader.value = (App.currentRemoteItem.TestRecord || {}).header || ''
+
+              App.isTestCaseShow = false
+              App.onChange(false)
+              break
           }
         }
         else if (index == 3) {
@@ -1070,6 +1137,16 @@
           App.isPreviewEnabled = show
           App.saveCache('', 'isPreviewEnabled', show)
           // vRequestMarkdown.innerHTML = ''
+        }
+        else if (index == 11) {
+          App.isEditResponse = show
+          // App.saveCache('', 'isEditResponse', show)
+
+          vInput.value = (App.currentRemoteItem.Document || {}).request || ''
+          vHeader.value = (App.currentRemoteItem.Document || {}).header || ''
+
+          App.isTestCaseShow = false
+          App.onChange(false)
         }
       },
 
@@ -1228,6 +1305,8 @@
       },
       // 根据历史恢复数据
       restore: function (item, response, isRemote, test) {
+        App.isEditResponse = false
+
         item = item || {}
         // localforage.getItem(item.key || '', function (err, value) {
           var branch = new String(item.url || '/get')
@@ -1403,8 +1482,17 @@
             alert('请先登录！')
             return
           }
+
           var isExportRandom = App.isExportRandom
-          var did = ((App.currentRemoteItem || {}).Document || {}).id
+
+          if (isExportRandom != true && StringUtil.isEmpty(App.exTxt.name, true)) {
+            alert('请输入接口名！')
+            return
+          }
+
+          var doc = (App.currentRemoteItem || {}).Document || {}
+          var tr = (App.currentRemoteItem || {}).TestRecord || {}
+          var did = doc.id
           if (isExportRandom && did == null) {
             alert('请先共享测试用例！')
             return
@@ -1413,7 +1501,29 @@
           App.isTestCaseShow = false
 
           var currentAccountId = App.getCurrentAccountId()
-          var currentResponse = StringUtil.isEmpty(App.jsoncon, true) ? {} : App.removeDebugInfo(JSON.parse(App.jsoncon));
+          var currentResponse = App.view != 'code' || StringUtil.isEmpty(App.jsoncon, true) ? {} : App.removeDebugInfo(JSON.parse(App.jsoncon));
+
+          var after = App.toDoubleJSON(inputted);
+          var inputObj = App.getRequest(after, {});
+
+          var commentObj = null;
+          if (isExportRandom != true) {
+            var m = App.getMethod();
+            var commentStddObj = null
+            try {
+              commentStddObj = JSON.parse(App.isEditResponse ? tr.standard : doc.standard);
+            }
+            catch(e) {
+              log(e)
+            }
+            var code_ = inputObj.code
+            inputObj.code = null  // delete inputObj.code
+
+            commentObj = JSONResponse.updateStandard(commentStddObj, inputObj);
+            CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, true, commentObj, true);
+
+            inputObj.code = code_
+          }
 
           var code = currentResponse.code;
           var thrw = currentResponse.throw;
@@ -1427,7 +1537,7 @@
           currentResponse.code = code;
           currentResponse.throw = thrw;
 
-          var url = App.server + '/post'
+          var url = App.server + (isExportRandom || App.isEditResponse || did == null ? '/post' : '/put')
           var req = isExportRandom ? {
             format: false,
             'Random': {
@@ -1444,22 +1554,25 @@
             'tag': 'Random'
           } : {
             format: false,
-            'Document': {
+            'Document': App.isEditResponse ? null : {
+              'id': did == null ? undefined : did,
               'testAccountId': currentAccountId,
               'name': App.exTxt.name,
               'type': App.type,
               'url': '/' + App.getMethod(),
-              'request': App.toDoubleJSON(inputted),
+              'request': JSON.stringify(inputObj, null, '    '),
+              'standard': JSON.stringify(commentObj, null, '    '),
               'header': vHeader.value
             },
-            'TestRecord': {
+            'TestRecord': App.isEditResponse != true && did != null ? null : {
+              'documentId': App.isEditResponse ? did : undefined,
               'randomId': 0,
               'host': App.getBaseUrl(),
               'testAccountId': currentAccountId,
-              'response': JSON.stringify(currentResponse),
-              'standard': isML ? JSON.stringify(stddObj) : null
+              'response': JSON.stringify(App.isEditResponse ? inputObj : currentResponse),
+              'standard': isML || App.isEditResponse ? JSON.stringify(App.isEditResponse ? commentObj : stddObj) : undefined
             },
-            'tag': 'Document'
+            'tag': App.isEditResponse ? 'TestRecord' : 'Document'
           }
 
           App.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
@@ -1468,16 +1581,28 @@
             var rpObj = res.data || {}
 
             if (isExportRandom) {
-              if (rpObj.Random != null && rpObj.Random.code == CODE_SUCCESS) {
+              if (rpObj.code == CODE_SUCCESS) {
                 App.randoms = []
                 App.showRandomList(true, (App.currentRemoteItem || {}).Document)
               }
             }
             else {
-              if (rpObj.Document != null && rpObj.Document.code == CODE_SUCCESS) {
+              var isPut = url.indexOf('/put') >= 0
+
+              if (rpObj.code != CODE_SUCCESS) {
+                if (isPut) {  // 修改失败就转为新增
+                  App.currentRemoteItem = null;
+                  alert('修改失败，请重试(自动转为新增)！' + StringUtil.trim(rpObj.msg))
+                }
+              }
+              else {
                 App.remotes = []
                 App.showTestCase(true, false)
 
+                if (isPut) {  // 修改失败就转为新增
+                  alert('修改成功')
+                  return
+                }
 
                 //自动生成随机配置（遍历 JSON，对所有可变值生成配置，排除 @key, key@, key() 等固定值）
                 var req = App.getRequest(vInput.value, {})
@@ -1591,10 +1716,10 @@
             if (isId) {
               config += prefix + 'ORDER_IN(undefined, null, ' + value + ')'
               if (value >= 1000000000) { //PHP 等语言默认精确到秒 1000000000000) {
-                config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
+                config += '\n  // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
               }
               else {
-                config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
+                config += '\n  // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
               }
             }
             else {
@@ -1620,16 +1745,16 @@
                 var hasDot = String(value).indexOf('.') >= 0
 
                 if (value < 0) {
-                  config += '\n// 可替代上面的 ' + prefix.substring(1) + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
+                  config += '\n  // 可替代上面的 ' + prefix.substring(1) + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
                 }
                 else if (value > 0 && value < 1) {  // 0-1 比例
-                  config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_NUM(0, 1)'
+                  config += '\n  // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_NUM(0, 1)'
                 }
                 else if (value >= 0 && value <= 100) {  // 10% 百分比
-                  config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(0, 100)'
+                  config += '\n  // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(0, 100)'
                 }
                 else {
-                  config += '\n// 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? 'ORDER_INT(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
+                  config += '\n  // 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? 'ORDER_INT(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
                 }
               }
             }
@@ -1701,6 +1826,8 @@
                 App.saveCache('', 'thirdParty', App.thirdParty)
               }
 
+              const header = App.getHeader(vHeader.value)
+
               if (platform == PLATFORM_POSTMAN) {
                 alert('尚未开发 ' + PLATFORM_POSTMAN)
               }
@@ -1744,7 +1871,7 @@
                   swaggerCallback(docUrl, { data: jsonData }, null)
                 }
                 else {
-                  App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, swaggerCallback)
+                  App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, header, swaggerCallback)
                 }
               }
               else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
@@ -1778,7 +1905,7 @@
                   itemCallback(itemUrl, { data: jsonData }, null)
                 }
                 else {
-                  App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+                  App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, header, function (url_, res, err) {
                     if (App.isSyncing) {
                       alert('正在同步，请等待完成')
                       return
@@ -1810,7 +1937,7 @@
                           continue
                         }
 
-                        App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, itemCallback)
+                        App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, header, itemCallback)
                       }
 
                     }
@@ -1834,6 +1961,8 @@
         App.parseThirdParty(thirdParty, function (platform, jsonData, docUrl, listUrl, itemUrl) {
           var isJSONData = jsonData instanceof Object
 
+          const header = App.getHeader(vHeader.value)
+
           if (platform == PLATFORM_POSTMAN) {
             alert('尚未开发 ' + PLATFORM_POSTMAN)
           }
@@ -1842,7 +1971,7 @@
               listCallback(platform, docUrl, listUrl, itemUrl, itemUrl, { data: jsonData }, null)
             }
             else {
-              App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, function (url_, res, err) {
+              App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, header, function (url_, res, err) {
                 if (listCallback != null) {
                   listCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)
                 }
@@ -1862,14 +1991,14 @@
               }
             }
             else {
-              App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+              App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, header, function (url_, res, err) {
                 if (listCallback != null && listCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)) {
                   return
                 }
 
                 var apis = (res.data || {}).data
                 if (apis == null) { // || apis.length <= 0) {
-                  alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
+                  alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！YApi/Rap/Swagger 网站的 Cookie 必须粘贴到请求头 Request Header 输入框！')
                   return
                 }
 
@@ -1885,7 +2014,12 @@
                       continue
                     }
 
-                    App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, function (url_, res, err) {
+                    // var p = listItem1.path == null ? null : StringUtil.noBlank(listItem1.path).replace(/\/\//g, '/')
+                    // if (p == null) {
+                    //   continue
+                    // }
+
+                    App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, header, function (url_, res, err) {
                       if (itemCallback != null) {
                         itemCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)
                       }
@@ -2081,8 +2215,14 @@
 
         var typeAndParam = App.parseYApiTypeAndParam(api)
 
-        return App.uploadThirdPartyApi(typeAndParam.type, api.title, api.path, typeAndParam.param, header
-          , StringUtil.isEmpty(api.markdown, true) ? api.description : api.markdown)
+        return App.uploadThirdPartyApi(
+          typeAndParam.type, api.title, api.path, typeAndParam.param, header
+          ,  (StringUtil.trim(api.username) + ': ' + StringUtil.trim(api.title)
+          + '\n' + (api.up_time == null ? '' : (typeof api.up_time != 'number' ? api.up_time : new Date(1000*api.up_time).toLocaleString()))
+          + '\nhttp://apijson.org/yapi/project/1/interface/api/' + api._id
+          + '\n\n' + (StringUtil.isEmpty(api.markdown, true) ? StringUtil.trim(api.description) : api.markdown.trim().replace(/\\_/g, '_')))
+          , api.username
+        )
       },
 
 
@@ -2156,7 +2296,7 @@
       },
 
       //上传第三方平台的 API 至 APIAuto
-      uploadThirdPartyApi: function(type, name, url, parameters, header, description) {
+      uploadThirdPartyApi: function(type, name, url, parameters, header, description, creator) {
         var req = '{'
 
         if (parameters != null && parameters.length > 0) {
@@ -2192,7 +2332,7 @@
               }
             }
             else if (typeof val == 'string' && (StringUtil.isEmpty(t, true) || t == 'string')) {
-              val = '"' + val + '"'
+              val = '"' + val.replace(/"/g, '\\"') + '"'
             }
             else if (val instanceof Object) {
               val = JSON.stringify(val, null, '    ')
@@ -2207,7 +2347,7 @@
         req += '\n}'
 
         if (StringUtil.isEmpty(description, true) == false) {
-          req += '\n/**\n\n' + StringUtil.trim(description) + '\n\n*/'
+          req += '\n\n/**\n\n' + StringUtil.trim(description).replace(/\*\//g, '* /') + '\n\n*/'
         }
 
 
@@ -2215,6 +2355,7 @@
         App.request(true, REQUEST_TYPE_JSON, App.server + '/post', {
           format: false,
           'Document': {
+            'creator': creator,
             'testAccountId': currentAccountId,
             'type': type,
             'name': StringUtil.get(name),
@@ -2301,6 +2442,8 @@
 
 
       onClickAccount: function (index, item, callback) {
+        App.isTestCaseShow = false
+
         if (this.currentAccountIndex == index) {
           if (item == null) {
             if (callback != null) {
@@ -2343,6 +2486,7 @@
                   item.remember = data.remember
                   item.isLoggedIn = true
 
+                  App.accounts[App.currentAccountIndex] = item
                   App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
                   App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
 
@@ -2436,6 +2580,7 @@
 
           this.isTestCaseShow = false
 
+          var types = App.types
           var search = StringUtil.isEmpty(this.testCaseSearch, true) ? null : '%' + StringUtil.trim(this.testCaseSearch) + '%'
           var url = this.server + '/get'
           var req = {
@@ -2448,7 +2593,8 @@
                 'userId': App.User.id,
                 'name$': search,
                 'url$': search,
-                '@combine':  search == null ? null : 'name$,url$'
+                '@combine':  search == null ? null : 'name$,url$',
+                'type{}': types == null || types.length <= 0 ? null : types
               },
               'TestRecord': {
                 'documentId@': '/Document/id',
@@ -2651,6 +2797,7 @@
        */
       login: function (isAdminOperation, callback) {
         App.isLoginShow = false
+        App.isEditResponse = false
 
         const req = {
           type: 0, // 登录方式，非必须 0-密码 1-验证码
@@ -2676,6 +2823,7 @@
 
             if (rpObj.code != CODE_SUCCESS) {
               alert('登录失败，请检查网络后重试。\n' + rpObj.msg + '\n详细信息可在浏览器控制台查看。')
+              App.onResponse(url, res, err)
             }
             else {
               var user = rpObj.user || {}
@@ -2828,6 +2976,7 @@
       /**退出
        */
       logout: function (isAdminOperation, callback) {
+        App.isEditResponse = false
         var req = {}
 
         if (isAdminOperation) {
@@ -2903,7 +3052,7 @@
 
         App.view = 'output';
         vComment.value = '';
-        vUrlComment.value = '';
+        // vUrlComment.value = '';
         vOutput.value = 'resolving...';
 
         //格式化输入代码
@@ -2940,11 +3089,13 @@
 
           //关键词let在IE和Safari上不兼容
           var code = '';
-          try {
-            code = this.getCode(after); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
-          } catch(e) {
-            code = '\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.'
-              + '\nError:\n' + e.message + '\n\n\n';
+          if (App.isEditResponse != true) {
+            try {
+              code = this.getCode(after); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
+            } catch (e) {
+              code = '\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.'
+                + '\nError:\n' + e.message + '\n\n\n';
+            }
           }
 
           if (isSingle) {
@@ -2962,14 +3113,23 @@
             + '\n                                                                                                       '
             + '                                                                                                       \n';  //解决遮挡
           vSend.disabled = false;
-          vOutput.value = output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
 
+          if (App.isEditResponse != true) {
+            vOutput.value = output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
 
-          App.showDoc()
+            App.showDoc()
+          }
 
           try {
+            var standardObj = null;
+            try {
+              standardObj = JSON.parse(((App.currentRemoteItem || {})[App.isEditResponse ? 'TestRecord' : 'Document'] || {}).standard);
+            } catch (e3) {
+              log(e3)
+            }
+
             var m = App.getMethod();
-            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, '/' + App.getMethod(), true))
+            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, App.isEditResponse != true, standardObj))
               + '\n                                                                                                       '
               + '                                                                                                       \n';  //解决遮挡
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
@@ -2985,6 +3145,22 @@
               ? '' : vUrl.value + CodeUtil.getComment(App.urlComment, false, '  ')
               + ' - ' + (App.requestVersion > 0 ? 'V' + App.requestVersion : 'V*');
 
+            if (! isSingle) {
+              var method = App.getMethod();  // m 已经 toUpperCase 了
+              var mIndex = method.indexOf('/');
+              var isRestful = mIndex > 0 && mIndex < method.length - 1;
+              if (isRestful != true) {
+                method = method.toUpperCase();
+              }
+              var apiMap = isRestful ? CodeUtil.thirdPartyApiMap : null;
+              var api = apiMap == null ? null : apiMap['/' + method];
+              var name = api == null ? null : api.name;
+              if (StringUtil.isEmpty(name, true) == false) {
+                App.urlComment = name;
+                vUrlComment.value = vUrl.value + CodeUtil.getComment(App.urlComment, false, '  ')
+              }
+            }
+
             onScrollChanged()
             onURLScrollChanged()
           } catch (e) {
@@ -2993,14 +3169,22 @@
 
           try {
             // 去掉前面的 JSON
-            var raw = vInput.value || ''
+            var it = StringUtil.trim(vInput.value);
+            var ct = StringUtil.trim(vComment.value);
+
+            var raw = (it.lastIndexOf('\n\/*') < 0 || it.lastIndexOf('\n*\/') < 0 ? ct : it) || '';
             var start = raw.lastIndexOf('\n\/*')
             var end = raw.lastIndexOf('\n*\/')
-            markdownToHTML('```js\n' + (StringUtil.isEmpty(vComment.value, true) ? (start < 0 || end <= start ? raw.substring(0, start) : '') : vComment.value) + '\n```\n'
+            markdownToHTML('```js\n' + (StringUtil.isEmpty(ct) ? (start < 0 || end <= start ? raw.substring(0, start) : '') : ct) + '\n```\n'
               // + App.toMD(start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
               + (start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
           } catch (e3) {
             log(e3)
+          }
+
+          if (App.isEditResponse) {
+            App.view = 'code';
+            App.jsoncon = after
           }
 
         } catch(e) {
@@ -3021,7 +3205,7 @@
         this.setBaseUrl();
         inputted = new String(vInput.value);
         vComment.value = '';
-        vUrlComment.value = '';
+        // vUrlComment.value = '';
 
         clearTimeout(handler);
 
@@ -3069,6 +3253,7 @@
           var index = this.types.indexOf(this.type)
           index++;
           this.type = this.types[index % count]
+          CodeUtil.type = this.type;
         }
 
         var url = StringUtil.get(vUrl.value)
@@ -3100,12 +3285,11 @@
 
           vUrl.value = url.substring(0, index)
           if ($.isEmptyObject(paramObj) == false) {
-            vInput.value = '//TODO 从 URL 上的参数转换过来：\n' +  JSON.stringify(paramObj, null, '    ') + '\n//FIXME 需要与下面原来的字段合并为一个 JSON：\n' + StringUtil.get(vInput.value)
+            vInput.value = '// TODO 从 URL 上的参数转换过来：\n' +  JSON.stringify(paramObj, null, '    ') + '\n// FIXME 需要与下面原来的字段合并为一个 JSON：\n' + StringUtil.get(vInput.value)
           }
           clearTimeout(handler)  //解决 vUrl.value 和 vInput.value 变化导致刷新，而且会把 vInput.value 重置，加上下面 onChange 再刷新就卡死了
         }
 
-        CodeUtil.type = this.type;
         this.onChange(false);
       },
 
@@ -3155,6 +3339,11 @@
 
         clearTimeout(handler)
 
+        if (App.isEditResponse) {
+          App.onChange(false)
+          return
+        }
+
         var header
         try {
           header = this.getHeader(vHeader.value)
@@ -3163,7 +3352,7 @@
           return
         }
 
-        var req = this.getRequest(vInput.value)
+        var req = this.getRequest(vInput.value, {})
 
         var url = this.getUrl()
 
@@ -3182,7 +3371,7 @@
         this.locals.unshift({
           'Document': {
             'userId': App.User.id,
-            'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
+            'name': App.formatDateTime() + ' ' + (App.urlComment || StringUtil.trim(req.tag)),
             'type': App.type,
             'url': '/' + method,
             'request': JSON.stringify(req, null, '    '),
@@ -3276,6 +3465,15 @@
           App.jsoncon = JSON.stringify(data, null, '    ');
           App.view = 'code';
           vOutput.value = '';
+
+          // 会导致断言用了这个
+          // if (App.currentRemoteItem == null) {
+          //   App.currentRemoteItem = {}
+          // }
+          // if (App.currentRemoteItem.TestRecord == null) {
+          //   App.currentRemoteItem.TestRecord = {}
+          // }
+          // App.currentRemoteItem.TestRecord.response = data
         }
       },
 
@@ -3285,6 +3483,14 @@
        */
       doOnKeyUp: function (event, type, isFilter, item) {
         var keyCode = event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode);
+
+        var obj = event.srcElement ? event.srcElement : event.target;
+        if ($(obj).attr('id') == 'vUrl') {
+          vUrlComment.value = ''
+          App.currentDocItem = null
+          App.currentRemoteItem = null
+        }
+
         if (keyCode == 13) { // enter
           if (isFilter) {
             this.onFilterChange(type)
@@ -3655,7 +3861,7 @@
                 "@order": this.database != 'SQLSERVER' ? null : "table_name+",
                 '@column': this.database == 'POSTGRESQL' || this.database == 'SQLSERVER'  //MySQL 8 SELECT `column_name` 返回的仍然是大写的 COLUMN_NAME，需要 AS 一下
                   ? 'column_name;data_type;numeric_precision,numeric_scale,character_maximum_length'
-                  : 'column_name:column_name,column_type:column_type,column_comment:column_comment'
+                  : 'column_name:column_name,column_type:column_type,is_nullable:is_nullable,column_comment:column_comment'
               },
               'PgAttribute': this.database != 'POSTGRESQL' ? null : {
                 'attrelid@': '[]/PgClass/oid',
@@ -4729,14 +4935,14 @@
         var tr = it.TestRecord || {} //请求异步
 
         var bdt = tr.duration || 0
-        it.durationBeforeShowStr = bdt <= 0 ? '' : (bdt < 1000 ? bdt + 'ms' : (bdt < 1000*60 ? (bdt/1000).toFixed(1) + 's' : (bdt <= 1000*60*60 ? (bdt/1000/60/60).toFixed(1) + 'm' : '>1h')))
+        it.durationBeforeShowStr = bdt <= 0 ? '' : (bdt < 1000 ? bdt + 'ms' : (bdt < 1000*60 ? (bdt/1000).toFixed(1) + 's' : (bdt <= 1000*60*60 ? (bdt/1000/60).toFixed(1) + 'm' : '>1h')))
         try {
           var durationInfo = response['time:start|duration|end']
           it.durationInfo = durationInfo
           it.duration = durationInfo.substring(durationInfo.indexOf('\|') + 1, durationInfo.lastIndexOf('\|') || durationInfo.length) || 0
           var dt = + it.duration
           it.duration = dt
-          it.durationShowStr = dt <= 0 ? '' : (dt < 1000 ? dt + 'ms' : (dt < 1000*60 ? (dt/1000).toFixed(1) + 's' : (dt <= 1000*60*60 ? (dt/1000/60/60).toFixed(1) + 'm' : '>1h')))
+          it.durationShowStr = dt <= 0 ? '' : (dt < 1000 ? dt + 'ms' : (dt < 1000*60 ? (dt/1000).toFixed(1) + 's' : (dt <= 1000*60*60 ? (dt/1000/60).toFixed(1) + 'm' : '>1h')))
           var min = tr.minDuration || 20
           var max = tr.maxDuration || 200
           it.durationColor = dt < min ? 'green' : (dt > 2*max ? 'red' : (dt > max + min ? 'orange' : (dt > max ? 'blue' : 'black')))
@@ -4987,6 +5193,7 @@
         }
         else {
           this.currentDocIndex = index
+          this.currentRemoteItem = item
           // this.currentRandomIndex = -1
           // this.currentRandomSubIndex = -1
           document = item.Document = item.Document || {}
@@ -5275,7 +5482,7 @@
             testAccountId: App.getCurrentAccountId(),
             'host': App.getBaseUrl(),
             '@order': 'date-',
-            '@column': 'id,userId,documentId,randomId,duration,minDuration,maxDuration,response' + (App.isMLEnabled ? ',standard' : ''),
+            '@column': 'id,userId,testAccountId,documentId,randomId,duration,minDuration,maxDuration,response' + (App.isMLEnabled ? ',standard' : ''),
             '@having': App.isMLEnabled ? 'length(standard)>2' : null  // '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
           }
         }, {}, function (url, res, err) {
@@ -5406,6 +5613,7 @@
         this.randomSubPage = this.getCache(this.server, 'randomSubPage') || this.randomSubPage
         this.randomSubCount = this.getCache(this.server, 'randomSubCount') || this.randomSubCount
 
+        CodeUtil.thirdPartyApiMap = this.getCache(this.thirdParty, 'thirdPartyApiMap')
       } catch (e) {
         console.log('created  try { ' +
           '\nthis.User = this.getCache(this.server, User) || {}' +
