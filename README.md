@@ -19,11 +19,24 @@
 在常用功能上远超 Postman, Swagger, YApi, Rap 等其它各种 开源、商业 的 API 文档/测试 工具。<br />
 支持 HTTP GET/POST API，智能显示和切换；支持一键导入 Swagger, Rap, YApi 的用例和文档。<br />
 不仅适用于 RESTful、类 RESTful、GRPC 的 API，还是腾讯 [APIJSON](https://github.com/Tencent/APIJSON) 官方建议的文档与测试工具。<br />
-腾讯内部用户包括 互娱、技术工程、云与智慧 等，外部用户包含 500强上市公司深圳传音、行业领头羊社保科技 等。
+腾讯内部用户包括 互动娱乐、技术工程、云与智慧 等，外部用户包含 500强上市公司深圳传音、行业领头羊社保科技 等。
 
-#### 先后被腾讯 TEG 工具开发组、微信支付部门、腾讯 IEG 工具开发组邀请分享了 
+#### 和华为云副总裁并列，QECon-全球软件质量&效能 大会分享总结
+零代码开发和测试 成为大会主会场回看预约海报唯一分会场演讲范例 <br />
+https://www.bilibili.com/video/BV1yv411p7Y4
+
+<img width="1360" alt="wecom-temp-377bbd0daf5aed716baf7ebcb003d94c" src="https://user-images.githubusercontent.com/5738175/121370207-1b35de00-c96f-11eb-840e-cc2ff2995888.png">
+
+<img width="390" src="https://user-images.githubusercontent.com/5738175/125167121-86bed580-e1d1-11eb-9dc6-2ea190146fe6.png">
+
+现场录播回放视频：QECon大会-零代码开发和测试(APIJSON和APIAuto)<br />
+https://www.bilibili.com/video/BV1yv411p7Y4
+<br />
+
+#### 腾讯内先后被 TEG 工具开发组、微信支付部门、IEG 工具开发组、CDG 金融支付组 邀请分享了 
 * APIAuto-机器学习 HTTP 接口工具
 * 零代码测试工具与实践(API•单元•UI)
+* 零代码开发和测试(API测试•单元测试•API开发)
 * 零代码开发和测试(API测试•单元测试•API开发)
 
 ![image](https://user-images.githubusercontent.com/5738175/116197821-c72cbc80-a767-11eb-8df1-5dc6f1d46e8f.png)
@@ -83,8 +96,11 @@
 
 ### 部署方法
 
-可以直接下载源码解压后用浏览器打开 index.html，建议用 Chrome 或 火狐 (Safari、Edge、IE 等可能有兼容问题)。<br />
-也可以直接访问官网的线上环境 http://apijson.cn/api 或开发环境 http://apijson.org:8000/api 。<br />
+本项目是纯静态 SPA 网页，下载源码解压后：<br />
+可以用浏览器打开 index.html，建议用 [Chrome](https://www.google.com/intl/zh-CN/chrome) 或 [Firefox](https://www.mozilla.org/zh-CN/firefox) (Safari、Edge、IE 等可能有兼容问题)，注意此方法不显示 svg 图标。<br />
+也可以用 [IntelIJ Webstorm](https://www.jetbrains.com/webstorm/), [IntelliJ IDEA](https://www.jetbrains.com/idea/), [Eclipse](https://www.eclipse.org/) 等 IDE 来打开。<br />
+也可以部署到服务器并用 [Nginx](https://www.jianshu.com/p/11fa3a1a6d65) 或 [Node](https://segmentfault.com/a/1190000039744899) 反向代理，或者 [把源码放到 SpringBoot 项目的 static 目录](https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server)。 <br />
+还可以直接访问官方网站 http://apijson.cn/api <br />
 <br />
 把左侧 URL 输入框内基地址改为你主机的地址(例如 http://localhost:8080 )，<br />
 然后在右上角 设置 下拉菜单内修改 数据库类型Database、数据库模式Schema。<br />
@@ -92,16 +108,32 @@
 右上角登录的默认管理员账号为 13000082001 密码为 123456，<br />
 右侧上方中间 3 个标签是默认的测试用户账号，点击登录/退出，左侧 - 删除，右侧 + 新增。<br />
 <br />
-自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br /> 
+自动生成文档、自动管理测试用例 这两个功能 需要部署 APIJSON 后端，建议用 APIJSONBoot 系列之一 Demo，见 <br /> 
 https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 
 ### 常见问题
+
+**本网页工具基本每个按钮/输入框等 UI 组件都有注释或悬浮文档等形式的操作提示，<br />
+很多问题都不需要看文档/视频，可以直接通过把光标放上去等简单尝试来得到解答**
+
 #### 1.无法访问接口
+Chrome 90+ 对 CORS 请求禁止携带 Cookie 或 Chrome 80-89 强制 same-site Cookie 的策略导致 <br />
 https://github.com/TommyLemon/APIAuto/issues/9
 
 #### 2.没有生成文档
+右上角设置项与数据库实际配置不一致 等  <br />
 https://github.com/Tencent/APIJSON/issues/85
 
+#### 3.托管服务器访问不了
+不能代理接口、不能展示文档、不能对断言结果纠错 等 <br />
+https://github.com/TommyLemon/APIAuto/issues/12
+
+#### 4.apijson.org 访问不了
+管理后台网页改用 http://apijson.cn/api ，托管服务地址改为 http://47.74.39.68:9090  <br />
+https://github.com/TommyLemon/APIAuto/issues/13
+
+更多常见问题 <br />
+https://github.com/TommyLemon/APIAuto
 
 ### 感谢开源
 * jsonon
@@ -123,37 +155,31 @@ https://github.com/Tencent/APIJSON/issues/85
 <br />
 
 
-
 ### 其它项目
-[APIJSON](https://github.com/Tencent/APIJSON) 腾讯零代码、热更新、自动化 ORM 库 🏆 后端接口和文档自动化，前端(客户端) 定制返回 JSON 的数据和结构
 
-[apijson-doc](https://github.com/vincentCheng/apijson-doc) APIJSON 官方文档，提供排版清晰、搜索方便的文档内容展示，包括设计规范、图文教程等
-
-[APIJSONdocs](https://github.com/ruoranw/APIJSONdocs) APIJSON 英文文档，提供排版清晰的文档内容展示，包括详细介绍、设计规范、使用方式等
-
-[apijson.org](https://github.com/APIJSON/APIJSON.org) APIJSON 官方网站，提供 APIJSON 的 功能简介、登记用户、作者与贡献者、相关链接 等
-
-[APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON ，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite
-
-[apijson-php](https://github.com/qq547057827/apijson-php) PHP 版 APIJSON，基于 ThinkPHP，支持 MySQL, PostgreSQL, SQL Server, Oracle 等
-
-[apijson-node](https://github.com/kevinaskin/apijson-node) Node.ts 版 APIJSON，提供 nestjs 和 typeorm 的 Demo，支持 MySQL, PostgreSQL, SQL Server, Oracle
-
-[uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) Python 版 APIJSON，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite 等
-
-[APIJSON](https://github.com/crazytaxi824/APIJSON) Go 版 APIJSON，功能开发中...
-
-[APIJSONKOTLIN](https://github.com/luckyxiaomo/APIJSONKOTLIN) Kotlin 版 APIJSON，基础框架搭建中...
-
-[APIJSONParser](https://github.com/Zerounary/APIJSONParser) 第三方 APIJSON 解析器，将 JSON 动态解析成 SQL
-
-[ApiJsonByJFinal](https://gitee.com/zhiyuexin/ApiJsonByJFinal) 整合 APIJSON 和 JFinal 的 Demo
-
-[SpringServer1.2-APIJSON](https://github.com/Airforce-1/SpringServer1.2-APIJSON) 智慧党建服务器端，提供 上传 和 下载 文件的接口
+[APIJSON](https://github.com/Tencent/APIJSON) 腾讯零代码、热更新、全自动 ORM 库 🏆 后端接口和文档自动化，前端(客户端) 定制返回 JSON 的数据和结构
 
 [UnitAuto](https://github.com/TommyLemon/UnitAuto) 机器学习单元测试平台，零代码、全方位、自动化 测试 方法/函数 的正确性和可用性
 
-感谢热心的作者们的贡献，点 ⭐Star 支持下他们吧。
+[APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON ，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite
+
+[apijson-go](https://gitee.com/tiangao/apijson-go) Go 版 APIJSON ，支持单表查询、数组查询、多表一对一关联查询、多表一对多关联查询 等
+
+[APIJSON-php](https://github.com/xianglong111/APIJSON-php) PHP 版 APIJSON，基于 ThinkPHP，支持 MySQL, PostgreSQL, SQL Server, Oracle 等
+
+[apijson-php](https://github.com/qq547057827/apijson-php) PHP 版 APIJSON，基于 ThinkPHP，支持 MySQL, PostgreSQL, SQL Server, Oracle 等
+
+[apijson-node](https://github.com/kevinaskin/apijson-node) 字节跳动工程师开源的 Node.ts 版 APIJSON，提供 nestjs 和 typeorm 的 Demo
+
+[uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) Python 版 APIJSON，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite 等
+
+[APIJSONParser](https://github.com/Zerounary/APIJSONParser) 第三方 APIJSON 解析器，将 JSON 动态解析成 SQL
+
+[APIJSON-ToDo-Demo](https://github.com/jerrylususu/apijson_todo_demo) 一个简单的 todo 示例项目，精简数据，简化上手流程，带自定义鉴权逻辑 
+  
+[apijson-practice](https://github.com/vcoolwind/apijson-practice) BAT 技术专家开源的 APIJSON 参数校验注解 Library 及相关 Demo
+
+[apijson-learn](https://github.com/rainboy-learn/apijson-learn) APIJSON 学习笔记和源码解析
 
 
 ### 持续更新
